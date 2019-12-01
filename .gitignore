@@ -1,3 +1,5 @@
 01
 02
 *.swp
+Cargo.lock
+target
