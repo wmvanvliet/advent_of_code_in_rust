@@ -9,21 +9,20 @@ fn main() {
 }
 
 fn part1(input: &str) -> i64 {
-    let mut seen:HashSet<[i64; 2]> = HashSet::new();
-    let mut x = 0;
-    let mut y = 0;
+    let mut seen:HashSet<(i64, i64)> = HashSet::new();
+    let mut pos = (0, 0);
 
-    seen.insert([0, 0]);
+    seen.insert((0, 0));
     for line in input.lines() {
         for ch in line.trim_end().chars() {
             match ch {
-                '>' => x += 1,
-                '<' => x -= 1,
-                '^' => y += 1,
-                'v' => y -= 1,
+                '>' => pos.0 += 1,
+                '<' => pos.0 -= 1,
+                '^' => pos.1 += 1,
+                'v' => pos.1 -= 1,
                 _ => panic!(),
             };
-            seen.insert([x, y]);
+            seen.insert(pos);
         }
     }
 
@@ -31,37 +30,20 @@ fn part1(input: &str) -> i64 {
 }
 
 fn part2(input: &str) -> i64 {
-    let mut seen:HashSet<[i64; 2]> = HashSet::new();
-    let mut santa_x = 0;
-    let mut santa_y = 0;
-    let mut robot_x = 0;
-    let mut robot_y = 0;
-    let mut turn = 1;
+    let mut seen:HashSet<(i64, i64)> = HashSet::new();
+    let mut pos = [(0, 0), (0, 0)];
 
-    seen.insert([0, 0]);
+    seen.insert((0, 0));
     for line in input.lines() {
-        for ch in line.trim_end().chars() {
-            if turn == 1 {
-                match ch {
-                    '>' => santa_x += 1,
-                    '<' => santa_x -= 1,
-                    '^' => santa_y += 1,
-                    'v' => santa_y -= 1,
-                    _ => panic!(),
-                };
-                seen.insert([santa_x, santa_y]);
-                turn = 2;
-            } else {
-                match ch {
-                    '>' => robot_x += 1,
-                    '<' => robot_x -= 1,
-                    '^' => robot_y += 1,
-                    'v' => robot_y -= 1,
-                    _ => panic!(),
-                };
-                seen.insert([robot_x, robot_y]);
-                turn = 1;
-            }
+        for (i, ch) in line.trim_end().chars().enumerate() {
+            match ch {
+                '>' => pos[i % 2].0 += 1,
+                '<' => pos[i % 2].0 -= 1,
+                '^' => pos[i % 2].1 += 1,
+                'v' => pos[i % 2].1 -= 1,
+                _ => panic!(),
+            };
+            seen.insert(pos[i % 2]);
         }
     }
 
