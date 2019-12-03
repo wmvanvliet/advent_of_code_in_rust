@@ -45,29 +45,32 @@ fn execute_program(initial_program:&Vec<i64>, noun:i64, verb:i64) -> i64 {
     // Execute all instructions
     let mut instr_ptr:usize = 0;
     loop {
-        instr_ptr += match program[instr_ptr] {
-            1 => add_instr(program[instr_ptr + 1], program[instr_ptr + 2], program[instr_ptr + 3], &mut program),
-            2 => mult_instr(program[instr_ptr + 1], program[instr_ptr + 2], program[instr_ptr + 3], &mut program),
-            99 => return program[0],
+        if instr_ptr >= program.len() {
+            break;
+        }
+        match program[instr_ptr] {
+            1 => { // Add
+                let left_ptr = program[instr_ptr + 1] as usize;
+                let right_ptr = program[instr_ptr + 2] as usize;
+                let target_ptr = program[instr_ptr + 3] as usize;
+                program[target_ptr] = program[left_ptr] + program[right_ptr];
+                instr_ptr += 4;
+            }
+            2 => { // Multiply
+                let left_ptr = program[instr_ptr + 1] as usize;
+                let right_ptr = program[instr_ptr + 2] as usize;
+                let target_ptr = program[instr_ptr + 3] as usize;
+                program[target_ptr] = program[left_ptr] * program[right_ptr];
+                instr_ptr += 4;
+            }
+            99 => { // Halt
+                break;
+            }
             _ => panic!()
         };
-
-        if instr_ptr >= program.len() {
-            return program[0];
-        }
     }
-}
 
-/// Opcode 1: add
-fn add_instr(pos1:i64, pos2:i64, target:i64, program:&mut Vec<i64>) -> usize {
-    program[target as usize] = program[pos1 as usize] + program[pos2 as usize];
-    return 4;
-}
-
-/// Opcode 2: multiply
-fn mult_instr(pos1:i64, pos2:i64, target:i64, program:&mut Vec<i64>) -> usize {
-    program[target as usize] = program[pos1 as usize] * program[pos2 as usize];
-    return 4;
+    program[0]
 }
 
 #[cfg(test)]
@@ -76,10 +79,10 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1("1,9,10,3,2,3,11,0,99,30,40,50"), 3500);
-        assert_eq!(part1("1,0,0,0,99"), 2);
-        assert_eq!(part1("2,3,0,3,99"), 2);
-        assert_eq!(part1("2,4,4,5,99,0"), 2);
-        assert_eq!(part1("1,1,1,4,99,5,6,0,99"), 30);
+        assert_eq!(execute_program(&vec![1,9,10,3,2,3,11,0,99,30,40,50], 9, 10), 3500);
+        assert_eq!(execute_program(&vec![1,0,0,0,99], 0, 0), 2);
+        assert_eq!(execute_program(&vec![2,3,0,3,99], 3, 0), 2);
+        assert_eq!(execute_program(&vec![2,4,4,5,99,0], 4, 4), 2);
+        assert_eq!(execute_program(&vec![1,1,1,4,99,5,6,0,99], 1, 1), 30);
     }
 }
