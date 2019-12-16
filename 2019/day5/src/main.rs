@@ -45,35 +45,31 @@ fn execute_program(program:&Vec<i64>, inputs:&Vec<i64>) -> Vec<i64> {
     let mut input_ptr:usize = 0;
     loop {
         if instr_ptr >= program.len() {
-            break;
+            break;  // End of program
         }
+
         let instruction = Opcode::from(program[instr_ptr]);
+
+        let get_param = |offset, addressing_mode| {
+            match addressing_mode {
+                0 => program[program[instr_ptr + offset] as usize], // Memory addressing mode
+                1 => program[instr_ptr + offset], // Immediate addressing mode
+                _ => panic!("Invalid adressing mode")
+            }
+        };
+
         match instruction.code {
             1 => { // Add
-                let mut left = program[instr_ptr + 1];
-                let mut right = program[instr_ptr + 2];
+                let left = get_param(1, instruction.param1_mode);
+                let right = get_param(2, instruction.param2_mode);
                 let target_ptr = program[instr_ptr + 3] as usize;
-
-                if instruction.param1_mode == 0 {
-                    left = program[left as usize];
-                }
-                if instruction.param2_mode == 0 {
-                    right = program[right as usize];
-                }
                 program[target_ptr] = left + right;
                 instr_ptr += 4;
             }
             2 => { // Multiply
-                let mut left = program[instr_ptr + 1];
-                let mut right = program[instr_ptr + 2];
+                let left = get_param(1, instruction.param1_mode);
+                let right = get_param(2, instruction.param2_mode);
                 let target_ptr = program[instr_ptr + 3] as usize;
-
-                if instruction.param1_mode == 0 {
-                    left = program[left as usize];
-                }
-                if instruction.param2_mode == 0 {
-                    right = program[right as usize];
-                }
                 program[target_ptr] = left * right;
                 instr_ptr += 4;
             }
@@ -92,14 +88,8 @@ fn execute_program(program:&Vec<i64>, inputs:&Vec<i64>) -> Vec<i64> {
                 instr_ptr += 2;
             }
             5 => { // Jump-if-true
-                let mut cmp = program[instr_ptr + 1];
-                let mut jmp = program[instr_ptr + 2];
-                if instruction.param1_mode == 0 {
-                    cmp = program[cmp as usize];
-                }
-                if instruction.param2_mode == 0 {
-                    jmp = program[jmp as usize];
-                }
+                let cmp = get_param(1, instruction.param1_mode);
+                let jmp = get_param(2, instruction.param2_mode);
                 if cmp != 0 {
                     instr_ptr = jmp as usize;
                 } else {
@@ -107,14 +97,8 @@ fn execute_program(program:&Vec<i64>, inputs:&Vec<i64>) -> Vec<i64> {
                 }
             }
             6 => { // Jump-if-false
-                let mut cmp = program[instr_ptr + 1];
-                let mut jmp = program[instr_ptr + 2];
-                if instruction.param1_mode == 0 {
-                    cmp = program[cmp as usize];
-                }
-                if instruction.param2_mode == 0 {
-                    jmp = program[jmp as usize];
-                }
+                let cmp = get_param(1, instruction.param1_mode);
+                let jmp = get_param(2, instruction.param2_mode);
                 if cmp == 0 {
                     instr_ptr = jmp as usize;
                 } else {
@@ -122,16 +106,9 @@ fn execute_program(program:&Vec<i64>, inputs:&Vec<i64>) -> Vec<i64> {
                 }
             }
             7 => { // Less then
-                let mut left = program[instr_ptr + 1];
-                let mut right = program[instr_ptr + 2];
+                let left = get_param(1, instruction.param1_mode);
+                let right = get_param(2, instruction.param2_mode);
                 let target_ptr = program[instr_ptr + 3] as usize;
-
-                if instruction.param1_mode == 0 {
-                    left = program[left as usize];
-                }
-                if instruction.param2_mode == 0 {
-                    right = program[right as usize];
-                }
                 if left < right {
                     program[target_ptr] = 1;
                 } else {
@@ -140,16 +117,9 @@ fn execute_program(program:&Vec<i64>, inputs:&Vec<i64>) -> Vec<i64> {
                 instr_ptr += 4;
             }
             8 => { // Equals
-                let mut left = program[instr_ptr + 1];
-                let mut right = program[instr_ptr + 2];
+                let left = get_param(1, instruction.param1_mode);
+                let right = get_param(2, instruction.param2_mode);
                 let target_ptr = program[instr_ptr + 3] as usize;
-
-                if instruction.param1_mode == 0 {
-                    left = program[left as usize];
-                }
-                if instruction.param2_mode == 0 {
-                    right = program[right as usize];
-                }
                 if left == right {
                     program[target_ptr] = 1;
                 } else {
@@ -171,7 +141,7 @@ struct Opcode {
     code:i64,
     param1_mode:i64,
     param2_mode:i64,
-    param3_mode:i64,
+    // param3_mode:i64,
 }
 
 // Parse an integer value into an opcode
@@ -195,7 +165,7 @@ impl From<i64> for Opcode {
             code: 10 * digits[3] + digits[4],
             param1_mode: digits[2],
             param2_mode: digits[1],
-            param3_mode: digits[0],
+            // param3_mode: digits[0],
         }
     }
 }
