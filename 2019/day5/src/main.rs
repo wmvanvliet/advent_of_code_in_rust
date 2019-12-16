@@ -80,10 +80,7 @@ fn execute_program(program:&Vec<i64>, inputs:&Vec<i64>) -> Vec<i64> {
                 instr_ptr += 2;
             }
             4 => { // Output
-                let mut out = program[instr_ptr + 1];
-                if instruction.param1_mode == 0 {
-                    out = program[out as usize];
-                }
+                let out = get_param(1, instruction.param1_mode);
                 outputs.push(out);
                 instr_ptr += 2;
             }

@@ -165,10 +165,7 @@ impl Iterator for IntCode {
                     self.instr_ptr += 2;
                 }
                 4 => { // Output
-                    let mut out = self.program[self.instr_ptr + 1];
-                    if instruction.param1_mode == 0 {
-                        out = self.program[out as usize];
-                    }
+                    let out = get_param(1, instruction.param1_mode);
                     self.instr_ptr += 2;
                     return Some(out);
                 }
