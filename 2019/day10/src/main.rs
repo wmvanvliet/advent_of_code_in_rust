@@ -113,6 +113,7 @@ fn can_see(astroids:&HashSet<(i64, i64)>, x_origin:i64, y_origin:i64) -> Vec<(i6
 /// 9h is 3/2 * π rad
 fn clockwise_angle(x_origin:i64, y_origin:i64, x_target:i64, y_target:i64) -> f64 {
     let mut angle = ((x_target - x_origin) as f64).atan2((y_origin - y_target) as f64);
+    // Make angle increase monotonically instead of becoming negative
     if angle < 0.0 {
         angle += 2.0 * std::f64::consts::PI;
     }
@@ -221,7 +222,9 @@ mod tests {
 
     #[test]
     fn test_can_see() {
+        // These astroids are defined in a random order
         let astroids:HashSet<(i64, i64)> = HashSet::from_iter([(1, 2), (0, 2), (0, 1), (0, 0), (1, 0), (2, 0), (2, 1), (2, 2)].iter().cloned());
+        // Result should be in clockwise order
         assert_eq!(can_see(&astroids, 1, 1), vec![(1, 0), (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (0, 1), (0, 0)]);
     }
 }
