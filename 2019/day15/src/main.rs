@@ -4,8 +4,16 @@ use std::collections::VecDeque;
 fn main() {
     let mut input = String::new();
     io::stdin().read_to_string(&mut input).unwrap();
-    println!("Part 1 answer: {}", part1(&input));
-    println!("Part 2 answer: {}", part2(&input));
+    println!("Part 1 answer: {}", part1(strip_bom(&input)));
+    println!("Part 2 answer: {}", part2(strip_bom(&input)));
+}
+
+fn strip_bom(input: &str) -> &str {
+    return if input.starts_with("\u{feff}") {
+        &input[3..]
+    } else {
+        input
+    }
 }
 
 fn part1(input: &str) -> i64 {
@@ -59,10 +67,10 @@ enum StatusCode {
 
 impl IntCode {
     fn new(program:&Vec<i64>) -> Self {
+        // Make a copy of the program to work with
         let mut memory = program.to_vec();
         memory.extend_from_slice(&[0; 1000]);
         IntCode {
-            // Make a copy of the program to work with
             memory: memory,
             instr_ptr: 0,
             relative_base: 0,
