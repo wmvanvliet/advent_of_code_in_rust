@@ -17,30 +17,20 @@ fn strip_bom(input: &str) -> &str {
 }
 
 fn part1(input: &str) -> i64 {
-    let mut program:Vec<i64> = input
+    let program:Vec<i64> = input
         .trim_end()
         .split(',')
         .map(|val| { println!("Number: |{:?}|", val); val.parse::<i64>().expect("Could not parse IntCode program.") })
         .collect();
 
-    let mut computer = IntCode::new(&program);
-    computer.feed_input(1);
-    /*
-    let result = match computer.next() {
-        Some(v) => v,
-        None => match computer.status {
-            StatusCode::Ready => panic!("Received None for no reason."),
-            StatusCode::InputRequested => -1,
-            StatusCode::Halted => panic!("End of program."),
-        }
-    };
-    println!("Result: {}", result);
-    */
+    let mut robot = Robot::new(&program);
+    find_oxygen(&mut robot, None);
+
     1
 }
 
 fn part2(input: &str) -> i64 {
-    let mut program:Vec<i64> = input
+    let program:Vec<i64> = input
         .trim_end()
         .split(',')
         .map(|val| { val.parse().unwrap() })
@@ -48,6 +38,118 @@ fn part2(input: &str) -> i64 {
 
     2
 }
+
+fn find_oxygen(robot: &mut Robot, last_dir: Option<Direction>) -> Option<(i64, i64)> {
+    for dir in [Direction::North, Direction::South, Direction::West, Direction::East].iter() {
+        println!("Exploring dir {:?}", dir);
+        if last_dir != None && &last_dir.unwrap() == dir {
+            println!("Already explored this dir.");
+            continue;
+        }
+        let result = robot.try_move(*dir);
+        if result == 2 {
+            let oxygen_loc = Some(robot.position);
+            println!("Oxygen found at {:?}!", oxygen_loc.unwrap());
+            robot.try_move(opposite(*dir));
+            return oxygen_loc;
+        } else if result == 1 {
+            println!("That worked! Continuing search...");
+            let oxygen_loc = find_oxygen(robot, Some(opposite(*dir)));
+            robot.try_move(opposite(*dir));
+            if oxygen_loc != None {
+                return oxygen_loc;
+            }
+        }
+    }
+
+    None  // No oxygen found
+}
+
+#[derive(PartialEq, Copy, Clone, Debug)]
+enum Direction {
+    North = 1,
+    South,
+    West,
+    East,
+}
+
+fn opposite(dir: Direction) -> Direction {
+    match dir {
+        Direction::North => Direction::South,
+        Direction::South => Direction::North,
+        Direction::West => Direction::East,
+        Direction::East => Direction::West,
+    }
+}
+
+struct Robot {
+    computer: IntCode,
+    position: (i64, i64),
+    last_direction: Option<Direction>,
+}
+
+impl Robot {
+    fn new(program: &Vec<i64>) -> Self {
+        Robot {
+            computer: IntCode::new(program),
+            position: (0, 0),
+            last_direction: None,
+        }
+    }
+
+    fn try_move(&mut self, dir:Direction) -> i64 {
+        self.computer.feed_input(dir as i64);
+        let result = match self.computer.next() {
+            Some(v) => v,
+            None => match self.computer.status {
+                StatusCode::Ready => panic!("Received None for no reason."),
+                StatusCode::InputRequested => panic!("More input requested."),
+                StatusCode::Halted => panic!("End of program."),
+            }
+        };
+
+        if result == 1 || result == 2 {
+            self.last_direction = Some(dir);
+            match dir {
+                Direction::North => self.position.1 += 1,
+                Direction::South => self.position.1 -= 1,
+                Direction::West => self.position.0 -= 1,
+                Direction::East => self.position.0 += 1,
+            }
+        } else {
+            self.last_direction = None;
+        }
+
+        println!("Current position: {:?}", self.position);
+        return result;
+    }
+
+    fn retrace_step(&mut self) {
+        match self.last_direction {
+            Some(dir) => match dir {
+                Direction::North => self.try_move(Direction::South),
+                Direction::South => self.try_move(Direction::North),
+                Direction::East => self.try_move(Direction::West),
+                Direction::West => self.try_move(Direction::East),
+            },
+            _ => 0,
+        };
+    }
+}
+
+
+/*
+fn find_oxygen(computer:&mut IntCode) -> i64 {
+    match move_robot(computer, Direction::North) {
+        0 =>,
+        1 => {find_oxygen(computer); move_robot(computer, Direction::South);},
+        2 => {println!("Oxygen found!"); move_robot(computer
+        _ => {panic!("Unexpacted response from computer:
+    }
+    return result;
+    1
+}
+*/
 
 /// Intcode computer simulator
 struct IntCode {
