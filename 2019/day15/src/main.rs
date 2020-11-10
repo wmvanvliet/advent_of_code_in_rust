@@ -1,5 +1,7 @@
 use std::io::{self, Read};
 use std::collections::VecDeque;
+use std::collections::HashMap;
+use std::collections::HashSet;
 
 fn main() {
     let mut input = String::new();
@@ -20,13 +22,14 @@ fn part1(input: &str) -> i64 {
     let program:Vec<i64> = input
         .trim_end()
         .split(',')
-        .map(|val| { println!("Number: |{:?}|", val); val.parse::<i64>().expect("Could not parse IntCode program.") })
+        .map(|val| { val.parse::<i64>().expect("Could not parse IntCode program.") })
         .collect();
 
     let mut robot = Robot::new(&program);
-    find_oxygen(&mut robot, None);
-
-    1
+    explore_map(&mut robot);
+    let oxygen_loc = robot.oxygen_loc.expect("No oxygen found??");
+    print_map(&robot.map);
+    return find_shortest_path(&robot.map, oxygen_loc)
 }
 
 fn part2(input: &str) -> i64 {
@@ -36,33 +39,97 @@ fn part2(input: &str) -> i64 {
         .map(|val| { val.parse().unwrap() })
         .collect();
 
-    2
+    let mut robot = Robot::new(&program);
+    explore_map(&mut robot);
+    let oxygen_loc = robot.oxygen_loc.expect("No oxygen found??");
+    return oxygen_spread(&robot.map, oxygen_loc);
 }
 
-fn find_oxygen(robot: &mut Robot, last_dir: Option<Direction>) -> Option<(i64, i64)> {
+fn explore_map(robot: &mut Robot) {
     for dir in [Direction::North, Direction::South, Direction::West, Direction::East].iter() {
-        println!("Exploring dir {:?}", dir);
-        if last_dir != None && &last_dir.unwrap() == dir {
-            println!("Already explored this dir.");
+        if robot.map.contains_key(&dir.apply(robot.position)) {
             continue;
         }
         let result = robot.try_move(*dir);
         if result == 2 {
-            let oxygen_loc = Some(robot.position);
-            println!("Oxygen found at {:?}!", oxygen_loc.unwrap());
+            println!("Oxygen found at {:?}!", robot.position);
             robot.try_move(opposite(*dir));
-            return oxygen_loc;
         } else if result == 1 {
-            println!("That worked! Continuing search...");
-            let oxygen_loc = find_oxygen(robot, Some(opposite(*dir)));
+            explore_map(robot);
             robot.try_move(opposite(*dir));
-            if oxygen_loc != None {
-                return oxygen_loc;
+        }
+    }
+}
+
+fn find_shortest_path(map: &HashMap<(i64, i64), i64>, target: (i64, i64)) -> i64 {
+    println!("Finding shortest path to {:?}", target);
+    let mut visited:HashSet<(i64, i64)> = HashSet::new();
+    let mut frontier:VecDeque<(i64, i64, i64)> = VecDeque::new();
+    frontier.push_back((0, 0, 0));
+    while frontier.len() > 0 {
+        let entry = frontier.pop_front().unwrap();
+        let loc = (entry.0, entry.1);
+        let n_steps = entry.2;
+        visited.insert(loc);
+        for dir in [Direction::North, Direction::South, Direction::West, Direction::East].iter() {
+            let next_loc = dir.apply(loc);
+            if visited.contains(&next_loc) {
+                continue;
+            }
+            if map[&next_loc] == 2 {
+                return n_steps + 1;
+            } else if map[&next_loc] == 1 {
+                frontier.push_back((next_loc.0, next_loc.1, n_steps + 1));
             }
         }
     }
 
-    None  // No oxygen found
+    0
+}
+
+fn oxygen_spread(map: &HashMap<(i64, i64), i64>, oxygen_loc: (i64, i64)) -> i64 {
+    println!("Computing oxygen spread, with oxygen at location {:?}", oxygen_loc);
+    let mut visited:HashSet<(i64, i64)> = HashSet::new();
+    let mut frontier:VecDeque<(i64, i64, i64)> = VecDeque::new();
+    let mut n_steps = 0;
+    frontier.push_back((0, 0, 0));
+    while frontier.len() > 0 {
+        let entry = frontier.pop_front().unwrap();
+        let loc = (entry.0, entry.1);
+        n_steps = entry.2;
+        visited.insert(loc);
+        for dir in [Direction::North, Direction::South, Direction::West, Direction::East].iter() {
+            let next_loc = dir.apply(loc);
+            if visited.contains(&next_loc) {
+                continue;
+            } else if map[&next_loc] == 1 {
+                frontier.push_back((next_loc.0, next_loc.1, n_steps + 1));
+            }
+        }
+    }
+
+    n_steps
+}
+
+fn print_map(map: &HashMap<(i64, i64), i64>) {
+    for y in -30..30 {
+        for x in -30..30 {
+            if y == 0 && x == 0 {
+                print!("0");
+            } else if map.contains_key(&(x, y)) {
+                match map.get(&(x, y)) {
+                    None => print!(" "),
+                    Some(0) => print!("#"),
+                    Some(1) => print!("."),
+                    Some(2) => print!("X"),
+                    _ => print!(" "),
+                }
+            } else {
+                print!(" ");
+            }
+        }
+        print!("\n");
+    }
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -71,6 +138,17 @@ enum Direction {
     South,
     West,
     East,
+}
+
+impl Direction {
+    fn apply(&self, position: (i64, i64)) -> (i64, i64) {
+        match self {
+            Direction::North => (position.0, position.1 + 1),
+            Direction::South => (position.0, position.1 - 1),
+            Direction::West => (position.0 - 1, position.1),
+            Direction::East => (position.0 + 1, position.1),
+        }
+    }
 }
 
 fn opposite(dir: Direction) -> Direction {
@@ -85,7 +163,8 @@ fn opposite(dir: Direction) -> Direction {
 struct Robot {
     computer: IntCode,
     position: (i64, i64),
-    last_direction: Option<Direction>,
+    map: HashMap<(i64, i64), i64>,
+    oxygen_loc: Option<(i64, i64)>,
 }
 
 impl Robot {
@@ -93,7 +172,8 @@ impl Robot {
         Robot {
             computer: IntCode::new(program),
             position: (0, 0),
-            last_direction: None,
+            map: HashMap::new(),
+            oxygen_loc: None,
         }
     }
 
@@ -108,32 +188,15 @@ impl Robot {
             }
         };
 
+        self.map.insert(dir.apply(self.position), result);
         if result == 1 || result == 2 {
-            self.last_direction = Some(dir);
-            match dir {
-                Direction::North => self.position.1 += 1,
-                Direction::South => self.position.1 -= 1,
-                Direction::West => self.position.0 -= 1,
-                Direction::East => self.position.0 += 1,
-            }
-        } else {
-            self.last_direction = None;
+            self.position = dir.apply(self.position);
+        }
+        if result == 2 {
+            self.oxygen_loc = Some(self.position);
         }
 
-        println!("Current position: {:?}", self.position);
         return result;
-    }
-
-    fn retrace_step(&mut self) {
-        match self.last_direction {
-            Some(dir) => match dir {
-                Direction::North => self.try_move(Direction::South),
-                Direction::South => self.try_move(Direction::North),
-                Direction::East => self.try_move(Direction::West),
-                Direction::West => self.try_move(Direction::East),
-            },
-            _ => 0,
-        };
     }
 }
 
