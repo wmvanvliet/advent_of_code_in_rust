@@ -2,6 +2,11 @@ use std::io::{self, Read};
 use std::collections::VecDeque;
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::{thread, time};
+use termion::clear;
+
+const SCREEN_WIDTH:usize = 80;
+const SCREEN_HEIGHT:usize = 50;
 
 fn main() {
     let mut input = String::new();
@@ -42,7 +47,7 @@ fn part2(input: &str) -> i64 {
     let mut robot = Robot::new(&program);
     explore_map(&mut robot);
     let oxygen_loc = robot.oxygen_loc.expect("No oxygen found??");
-    return oxygen_spread(&robot.map, oxygen_loc);
+    return oxygen_spread(&mut robot.map, oxygen_loc);
 }
 
 fn explore_map(robot: &mut Robot) {
@@ -87,49 +92,63 @@ fn find_shortest_path(map: &HashMap<(i64, i64), i64>, target: (i64, i64)) -> i64
     0
 }
 
-fn oxygen_spread(map: &HashMap<(i64, i64), i64>, oxygen_loc: (i64, i64)) -> i64 {
+fn oxygen_spread(map: &mut HashMap<(i64, i64), i64>, oxygen_loc: (i64, i64)) -> i64 {
     println!("Computing oxygen spread, with oxygen at location {:?}", oxygen_loc);
-    let mut visited:HashSet<(i64, i64)> = HashSet::new();
     let mut frontier:VecDeque<(i64, i64, i64)> = VecDeque::new();
     let mut n_steps = 0;
-    frontier.push_back((0, 0, 0));
-    while frontier.len() > 0 {
-        let entry = frontier.pop_front().unwrap();
+    frontier.push_back((oxygen_loc.0, oxygen_loc.1, 0));
+    while let Some(entry) = frontier.pop_front() {
         let loc = (entry.0, entry.1);
         n_steps = entry.2;
-        visited.insert(loc);
+        map.insert(loc, 2);
         for dir in [Direction::North, Direction::South, Direction::West, Direction::East].iter() {
             let next_loc = dir.apply(loc);
-            if visited.contains(&next_loc) {
-                continue;
-            } else if map[&next_loc] == 1 {
-                frontier.push_back((next_loc.0, next_loc.1, n_steps + 1));
+            if map.contains_key(&next_loc) {
+                let next_loc_contents = map[&next_loc];
+                match next_loc_contents {
+                    1 => frontier.push_back((next_loc.0, next_loc.1, n_steps + 1)),
+                    _ => continue,
+                }
             }
         }
+
+        print_map(&map);
+        thread::sleep(time::Duration::new(0, 10_000_000));
     }
 
     n_steps
 }
 
 fn print_map(map: &HashMap<(i64, i64), i64>) {
-    for y in -30..30 {
-        for x in -30..30 {
+    // SCREEN_WIDTH + 1 to account for the newline at the end of the line
+    let mut s = String::with_capacity((SCREEN_WIDTH + 1) * SCREEN_HEIGHT);
+    let y_min:i64 = -(SCREEN_HEIGHT as i64 / 2);
+    let y_max:i64 = SCREEN_HEIGHT as i64 / 2;
+    let x_min:i64 = -(SCREEN_WIDTH as i64 / 2);
+    let x_max:i64 = SCREEN_WIDTH as i64 / 2;
+    for y in y_min..y_max {
+        for x in x_min..x_max {
             if y == 0 && x == 0 {
-                print!("0");
+                s.push_str("0");
             } else if map.contains_key(&(x, y)) {
                 match map.get(&(x, y)) {
-                    None => print!(" "),
-                    Some(0) => print!("#"),
-                    Some(1) => print!("."),
-                    Some(2) => print!("X"),
-                    _ => print!(" "),
+                    None => s.push(' '),
+                    Some(0) => s.push('#'),
+                    Some(1) => s.push('.'),
+                    Some(2) => s.push('O'),
+                    Some(n) => s.push('?'),
                 }
             } else {
-                print!(" ");
+                s.push(' ');
             }
         }
-        print!("\n");
+        s.push('\n');
     }
+
+    println!("{clear}{content}",
+        clear=clear::All,
+        content=s,
+    );
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -195,6 +214,9 @@ impl Robot {
         if result == 2 {
             self.oxygen_loc = Some(self.position);
         }
+
+        print_map(&self.map);
+        thread::sleep(time::Duration::new(0, 10_000_000));
 
         return result;
     }
