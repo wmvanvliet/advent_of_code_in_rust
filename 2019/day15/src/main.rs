@@ -136,7 +136,7 @@ fn print_map(map: &HashMap<(i64, i64), i64>) {
                     Some(0) => s.push('#'),
                     Some(1) => s.push('.'),
                     Some(2) => s.push('O'),
-                    Some(n) => s.push('?'),
+                    _ => s.push('?'),
                 }
             } else {
                 s.push(' ');
@@ -222,19 +222,6 @@ impl Robot {
     }
 }
 
-
-/*
-fn find_oxygen(computer:&mut IntCode) -> i64 {
-    match move_robot(computer, Direction::North) {
-        0 =>,
-        1 => {find_oxygen(computer); move_robot(computer, Direction::South);},
-        2 => {println!("Oxygen found!"); move_robot(computer
-        _ => {panic!("Unexpacted response from computer:
-    }
-    return result;
-    1
-}
-*/
 
 /// Intcode computer simulator
 struct IntCode {
