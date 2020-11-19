@@ -42,13 +42,39 @@ fn part1(input: &str, n_phases: i64) -> String {
         digits = phase_result;
     }
 
-    let mut answer = digits.into_iter().map(|x| x.to_string()).collect::<String>();
-    answer.truncate(8);
+    let answer = digits.into_iter().take(8).map(|x| x.to_string()).collect::<String>();
     answer
 }
 
-fn part2(input: &str) -> i64 {
-    2
+fn part2(input: &str) -> String {
+    let digits:Vec<i64> = input.trim().chars()
+        .map(|x| x.to_digit(10).unwrap() as i64)
+        .collect();
+
+    let offset:usize = input[0..7].parse().unwrap();
+
+    let n_relevant_digits = 10_000 * digits.len() - offset;
+    let mut relevant_digits:Vec<i64> = digits.into_iter()
+            .cycle()
+            .skip(offset)
+            .take(n_relevant_digits)
+            .collect();
+
+    relevant_digits = relevant_digits.into_iter().rev().collect();
+
+    let n_phases = 100;
+    for _ in 0..n_phases {
+        let mut cumsum:i64 = 0;
+        relevant_digits = relevant_digits.into_iter()
+            .map(|x| { cumsum += x; cumsum % 10 })
+            .collect();
+    }
+
+    relevant_digits.into_iter()
+        .rev()
+        .take(8)
+        .map(|x| x.to_string())
+        .collect::<String>()
 }
 
 #[cfg(test)]
@@ -65,6 +91,8 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(""), 2);
+        assert_eq!(part2("03036732577212944063491565474664"), "84462026");
+        assert_eq!(part2("02935109699940807407585447034323"), "78725270");
+        assert_eq!(part2("03081770884921959731165446850517"), "53553731");
     }
 }
