@@ -57,6 +57,9 @@ fn part1(input: &str) -> i64 {
  * To find three numbers that add to 2020, we could just loop more. However, lets be a bit more
  * clever. If we sort all the numbers, we can ensure that number1 < number2 < number3. That allows
  * us to stop the loop early when 2020 - (number1 + number2) < number2.
+ *
+ * Turns out, this early stopping strategy is wholly unnecessary, as the solution is already found
+ * on iteration 3, but oh well.
  */
 fn part2(input: &str) -> i64 {
     // We store all the numbers in increasing order
