@@ -1,9 +1,7 @@
 use std::io::{self, Read};
 use std::collections::VecDeque;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::{thread, time};
-use termion::clear;
+use regex::Regex;
 
 fn main() {
     let mut input = String::new();
@@ -75,7 +73,8 @@ fn part2(input: &str) -> i64 {
         .map(|val| { val.parse::<i64>().expect("Could not parse IntCode program.") })
         .collect();
 
-    // Spin up an IntCode computer and read the map
+    // Spin up an IntCode computer and read the map.
+    // This time, also parse out the robot location and direction.
     let computer = IntCode::new(&program);
     let mut map:HashMap<(i64, i64), char> = HashMap::new();
     let mut x:i64 = 0;
@@ -83,11 +82,15 @@ fn part2(input: &str) -> i64 {
     let mut map_width:i64 = 0;
     let mut map_height:i64 = 0;
     let mut robot_pos:(i64, i64) = (0, 0);
+    let mut robot_dir:char = '^';
     for output in computer {
         let output_char = output as u8 as char;
         match output_char {
             '\n' => { y += 1; x = 0; },
-            '^' => {map.insert((x, y), output_char); robot_pos = (x, y); x += 1; },
+            '^' => {map.insert((x, y), output_char); robot_pos = (x, y); robot_dir = output_char; x += 1; },
+            'v' => {map.insert((x, y), output_char); robot_pos = (x, y); robot_dir = output_char; x += 1; },
+            '>' => {map.insert((x, y), output_char); robot_pos = (x, y); robot_dir = output_char; x += 1; },
+            '<' => {map.insert((x, y), output_char); robot_pos = (x, y); robot_dir = output_char; x += 1; },
             _ => {map.insert((x, y), output_char); x += 1;  }
         }
         if x > map_width {
@@ -98,93 +101,138 @@ fn part2(input: &str) -> i64 {
         }
     }
 
-    // Find Eularian path
-    let mut unfinished_verts:VecDeque<(i64, i64)> = VecDeque::new();
-    let mut route:Vec<(i64, i64)> = Vec::new();
-    println!("Robot pos: {:?}", robot_pos);
-    unfinished_verts.push_back(robot_pos);
-    map.insert(robot_pos, 'V');
-    while !unfinished_verts.is_empty() {
-        let vert = unfinished_verts[unfinished_verts.len() - 1];
-        let mut edges:Vec<(i64, i64)> = Vec::new();
-        if vert.0 > 0 && map[&(vert.0 - 1, vert.1)] == '#' {
-            edges.push((vert.0 - 1, vert.1));
-        }
-        if vert.0 < map_width - 1 && map[&(vert.0 + 1, vert.1)] == '#' {
-            edges.push((vert.0 + 1, vert.1));
-        }
-        if vert.1 > 0 && map[&(vert.0, vert.1 - 1)] == '#' {
-            edges.push((vert.0, vert.1 - 1));
-        }
-        if vert.1 < map_height - 2 && map[&(vert.0, vert.1 + 1)] == '#' {
-            edges.push((vert.0, vert.1 + 1));
-        }
-        if edges.is_empty() {
-            route.push(vert);
-            unfinished_verts.pop_back();
-        } else {
-            for e in edges {
-                unfinished_verts.push_back(e);
-                map.insert(e, 'V');
-            }
-        }
+    // Find a path that will pass over all the scaffolding.
+    // Looking at the map, we can just go straight until we run into a wall.
+    // Then there is always only a single option available to us: either go right or left.
+    // If we hit a dead end, we've reached the end of the path.
+    let mut robot = Robot::new(robot_pos, robot_dir);
+    loop {
+        let next_turn = match robot.ori {
+            '^' => {
+                match map.get(&(robot.pos.0 + 1, robot.pos.1)) {
+                    Some('#') => 'R',
+                    _ => match map.get(&(robot.pos.0 - 1, robot.pos.1)) {
+                        Some('#') => 'L',
+                        _ => break,
+                    }
+                }
+            },
+            'v' => {
+                match map.get(&(robot.pos.0 - 1, robot.pos.1)) {
+                    Some('#') => 'R',
+                    _ => match map.get(&(robot.pos.0 + 1, robot.pos.1)) {
+                        Some('#') => 'L',
+                        _ => break,
+                    }
+                }
+            },
+            '>' => {
+                match map.get(&(robot.pos.0, robot.pos.1 + 1)) {
+                    Some('#') => 'R',
+                    _ => match map.get(&(robot.pos.0, robot.pos.1 - 1)) {
+                        Some('#') => 'L',
+                        _ => break,
+                    }
+                }
+            },
+            '<' => {
+                match map.get(&(robot.pos.0, robot.pos.1 - 1)) {
+                    Some('#') => 'R',
+                    _ => match map.get(&(robot.pos.0, robot.pos.1 + 1)) {
+                        Some('#') => 'L',
+                        _ => break,
+                    }
+                }
+            },
+            _ => unreachable!()
+        };
+        robot.turn(next_turn);
+        robot.move_forward(&map);
+        map.insert(robot.pos, robot.ori);
+        print_map(&map, map_width, map_height);
     }
+    println!("Route: {:?}", robot.route);
 
-    // Convert path into directions for the robot
-    let directions:Vec<char> = route[..].windows(2).map(|step| {
-        let from = step[0];
-        let to = step[1];
-        if from.0 > to.0 {
-            'L'
-        } else if from.0 < to.0 {
-            'R'
-        } else if from.1 > to.1 {
-            'D'
-        } else if from.1 < to.1 {
-            'U'
-        } else {
-            '?'
-        }
-    }).collect();
-    println!("{:?}", directions);
+    // Now that we know the route to take, we must find the optimal way to split it into 3
+    // movement functions. We will arrange them such that function A occurs first, then function B
+    // and then function C. To find all occurences of a given movement function in the route
+    // string, we will use regular expressions.
+    for A_end in 1..robot.route.len() {
+        let mut parsed_up_to = 0;
+        let mut A = String::from("");
+        A.push_str(&robot.route[..A_end]);
+        for B_start in A_end..robot.route.len() {
 
-    let mut optim_directions:Vec<(usize, char)> = Vec::new();
-    let mut last_d = directions[0];
-    let mut rep:usize = 1;
-    for d in directions[1..].into_iter() {
-        if d == &last_d {
-            rep += 1;
-        } else {
-            optim_directions.push((rep, last_d));
-            last_d = *d;
-            rep = 1;
-        }
-    }
-    println!("{:?} {:?}", optim_directions, optim_directions.len());
-
-    let mut LCSRe:HashMap<(usize, usize), usize> = HashMap::new();
-    for i in 0..(optim_directions.len() - 2) {
-        for j in (i + 1)..(optim_directions.len() - 1) {
-            if optim_directions[i] == optim_directions[j] && (j - i) > *LCSRe.get(&(i, j)).unwrap_or(&0) {
-                LCSRe.insert((i + 1, j + 1), *LCSRe.get(&(i, j)).unwrap_or(&0) + 1);
+        println!("{}", A);
+        let re = Regex::new(&A).unwrap();
+        for mat in re.find_iter(&robot.route) {
+            if mat.start() == parsed_up_to {
+                parsed_up_to = mat.end()
             } else {
-                LCSRe.insert((i + 1, j + 1), 0);
+                break;
             }
         }
+        let mut B_start = parsed_up_to + 1;
     }
+    2
+}
 
-    let mut max_substring:(usize, usize) = (0, 1);
-    let mut max_substring_length:usize = 0;
-    for (k, v) in LCSRe.into_iter() {
-        if v > max_substring_length {
-            max_substring = k;
-            max_substring_length = v;
+
+struct Robot {
+    pos: (i64, i64),
+    ori: char,
+    route: String,
+}
+
+impl Robot {
+    fn new(pos:(i64, i64), ori:char) -> Self {
+        Robot {
+            pos: pos,
+            ori: ori,
+            route: String::new(),
         }
     }
-    let ans = &optim_directions[max_substring.0..max_substring.1];
-    println!("{:?}, {:?}, {:?}, {:?}", ans, max_substring.0, max_substring.1, max_substring_length);
 
-    2
+    fn turn(&mut self, dir:char) {
+        self.ori = match dir {
+            'L' => match self.ori {
+                '^' => '<',
+                '>' => '^',
+                'v' => '>',
+                '<' => 'v',
+                _ => unreachable!()
+            },
+            'R' => match self.ori {
+                '^' => '>',
+                '>' => 'v',
+                'v' => '<',
+                '<' => '^',
+                _ => unreachable!()
+            },
+            _ => panic!("invalid dir.")
+        };
+        self.route.push_str(&dir.to_string());
+    }
+
+    fn move_forward(&mut self, map:&HashMap<(i64, i64), char>) {
+        let mut steps_taken:usize = 0;
+        let (dx, dy) = match self.ori {
+            '^' => (0, -1),
+            '>' => (1, 0),
+            'v' => (0, 1),
+            '<' => (-1, 0),
+            _ => unreachable!()
+        };
+
+        loop {
+            match map.get(&(self.pos.0 + dx, self.pos.1 + dy)) {
+                Some('#') => { self.pos.0 += dx; self.pos.1 += dy; steps_taken += 1; },
+                _ => { break; },
+            }
+        }
+
+        self.route.push_str(&steps_taken.to_string());
+    }
 }
 
 fn print_map(map:&HashMap<(i64, i64), char>, map_width:i64, map_height:i64) {
