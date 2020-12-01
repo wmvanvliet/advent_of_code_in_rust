@@ -37,10 +37,15 @@ fn part1(input: &str) -> i64 {
     let numbers:HashSet<i64> = input.lines()
         .map(|line| line.parse::<i64>().unwrap())
         .collect();
-    for number in numbers.iter() {
-        let other_number = 2020 - number;
-        if numbers.contains(&other_number) {
-            return number * other_number;
+    for number1 in numbers.iter() {
+        let number2 = 2020 - number1;
+        if number2 == *number1 {
+            // Numbers must be different
+            continue;
+        }
+        if numbers.contains(&number2) {
+            // Found solution!
+            return number1 * number2;
         }
     }
     panic!("No answer found!");
@@ -48,9 +53,36 @@ fn part1(input: &str) -> i64 {
 
 /**
  * Solves part 2 of the puzzle.
+ *
+ * To find three numbers that add to 2020, we could just loop more. However, lets be a bit more
+ * clever. If we sort all the numbers, we can stop the loop whenever
+ *     2020 - (number1 + number2) < smallest number in the input
  */
 fn part2(input: &str) -> i64 {
-    2
+    let mut numbers_ordered:Vec<i64> = input.lines()
+        .map(|line| line.parse::<i64>().unwrap())
+        .collect();
+    numbers_ordered.sort();
+
+    let smallest_number = numbers_ordered[0];
+
+    let numbers_set:HashSet<i64> = input.lines()
+        .map(|line| line.parse::<i64>().unwrap())
+        .collect();
+
+    for (i, number1) in numbers_ordered.iter().enumerate() {
+        for number2 in numbers_ordered[i+1..].iter() {
+            let number3 = 2020 - (number1 + number2);
+            if number3 < smallest_number {
+                // No solution possible, all number3's will be too large
+                break;
+            }
+            if numbers_set.contains(&number3) {
+                return number1 * number2 * number3;
+            }
+        }
+    }
+    panic!("No answer found!");
 }
 
 /**
@@ -67,6 +99,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2(""), 2);
+        assert_eq!(part2("1721\n979\n366\n299\n675\n1456\n"), 241861950);
     }
 }
