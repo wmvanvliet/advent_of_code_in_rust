@@ -1,7 +1,7 @@
 use std::io::{self, Read};
 use std::collections::VecDeque;
 use std::collections::HashMap;
-use regex::Regex;
+use fancy_regex::Regex;
 
 fn main() {
     let mut input = String::new();
@@ -67,7 +67,7 @@ fn part1(input: &str) -> i64 {
 }
 
 fn part2(input: &str) -> i64 {
-    let program:Vec<i64> = input
+    let mut program:Vec<i64> = input
         .trim_end()
         .split(',')
         .map(|val| { val.parse::<i64>().expect("Could not parse IntCode program.") })
@@ -149,32 +149,66 @@ fn part2(input: &str) -> i64 {
         robot.turn(next_turn);
         robot.move_forward(&map);
         map.insert(robot.pos, robot.ori);
-        print_map(&map, map_width, map_height);
     }
+    print_map(&map, map_width, map_height);
     println!("Route: {:?}", robot.route);
 
     // Now that we know the route to take, we must find the optimal way to split it into 3
-    // movement functions. We will arrange them such that function A occurs first, then function B
-    // and then function C. To find all occurences of a given movement function in the route
-    // string, we will use regular expressions.
-    for A_end in 1..robot.route.len() {
-        let mut parsed_up_to = 0;
-        let mut A = String::from("");
-        A.push_str(&robot.route[..A_end]);
-        for B_start in A_end..robot.route.len() {
+    // movement functions. Actually, this is a good job for an extremely complex regex :)
+    let re = Regex::new(r"(?x)
+        ^ 
+        (((L|R),\d+,){1,5})  # Movement function A (capture group #1)
+        \1*                  # function A may repeat before we get to function B
+        (((L|R),\d+,){1,5})  # Movement function B (capture group #4)
+        (\1|\4)*             # functions A and B may repeat before we get to function C
+        (((L|R),\d+,){1,5})  # Movement function C (capture group #8)
+        (\1|\4|\8)*          # all movement functions may repeat at will
+        $
+    ").unwrap();
+   
+    let captures = re.captures(&robot.route).expect("invalid regex").expect("no matches");
+    let mut function_A = String::from(captures.get(1).unwrap().as_str());
+    let mut function_B = String::from(captures.get(4).unwrap().as_str());
+    let mut function_C = String::from(captures.get(8).unwrap().as_str());
 
-        println!("{}", A);
-        let re = Regex::new(&A).unwrap();
-        for mat in re.find_iter(&robot.route) {
-            if mat.start() == parsed_up_to {
-                parsed_up_to = mat.end()
-            } else {
-                break;
-            }
+    // Remove trailing comma's
+    function_A.pop();
+    function_B.pop();
+    function_C.pop();
+
+    // Compile the main movement routine
+    let mut routine = robot.route.replace(&function_A, "A");
+    routine = routine.replace(&function_B, "B");
+    routine = routine.replace(&function_C, "C");
+    routine.pop();
+    println!("\nMain: {}\nA: {}\nB: {}\nC: {}\n", routine, function_A, function_B, function_C);
+
+    // Feed the routine to the CPU
+    program[0] = 2;
+    let mut computer = IntCode::new(&program);
+    for byte in routine.bytes() { computer.feed_input(byte as i64); }
+    computer.feed_input('\n' as i64);
+    for byte in function_A.bytes() { computer.feed_input(byte as i64); }
+    computer.feed_input('\n' as i64);
+    for byte in function_B.bytes() { computer.feed_input(byte as i64); }
+    computer.feed_input('\n' as i64);
+    for byte in function_C.bytes() { computer.feed_input(byte as i64); }
+    computer.feed_input('\n' as i64);
+    computer.feed_input('N' as i64);  // No continous feed
+    computer.feed_input('\n' as i64);
+
+    // Read out the answer from the CPU
+    let mut answer:i64 = 0;
+    let mut out = String::from("");
+    for output in computer {
+        if output < 127 {
+            let output_char = output as u8 as char;
+            out.push_str(&output_char.to_string());
+        } else {
+            answer = output;
         }
-        let mut B_start = parsed_up_to + 1;
     }
-    2
+    answer
 }
 
 
@@ -212,6 +246,7 @@ impl Robot {
             _ => panic!("invalid dir.")
         };
         self.route.push_str(&dir.to_string());
+        self.route.push_str(",");
     }
 
     fn move_forward(&mut self, map:&HashMap<(i64, i64), char>) {
@@ -232,6 +267,7 @@ impl Robot {
         }
 
         self.route.push_str(&steps_taken.to_string());
+        self.route.push_str(",");
     }
 }
 
