@@ -40,7 +40,7 @@ fn part1(input: &str) -> i64 {
     for number1 in numbers.iter() {
         let number2 = 2020 - number1;
         if number2 == *number1 {
-            // Numbers must be different
+            // Numbers must be unique
             continue;
         }
         if numbers.contains(&number2) {
@@ -59,23 +59,31 @@ fn part1(input: &str) -> i64 {
  *     2020 - (number1 + number2) < smallest number in the input
  */
 fn part2(input: &str) -> i64 {
+    // We store all the numbers in increasing order
     let mut numbers_ordered:Vec<i64> = input.lines()
         .map(|line| line.parse::<i64>().unwrap())
         .collect();
     numbers_ordered.sort();
 
+    // This number is useful later on
     let smallest_number = numbers_ordered[0];
 
+    // For quick lookups for number3
     let numbers_set:HashSet<i64> = input.lines()
         .map(|line| line.parse::<i64>().unwrap())
         .collect();
 
+    // The big loop over candidates number1, number2, number3
     for (i, number1) in numbers_ordered.iter().enumerate() {
         for number2 in numbers_ordered[i+1..].iter() {
             let number3 = 2020 - (number1 + number2);
             if number3 < smallest_number {
                 // No solution possible, all number3's will be too large
                 break;
+            }
+            if &number3 == number1 || &number3 == number2 {
+                // Numbers must be unique
+                continue;
             }
             if numbers_set.contains(&number3) {
                 return number1 * number2 * number3;
