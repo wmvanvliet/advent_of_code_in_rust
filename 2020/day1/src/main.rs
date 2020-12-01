@@ -55,8 +55,8 @@ fn part1(input: &str) -> i64 {
  * Solves part 2 of the puzzle.
  *
  * To find three numbers that add to 2020, we could just loop more. However, lets be a bit more
- * clever. If we sort all the numbers, we can stop the loop whenever
- *     2020 - (number1 + number2) < smallest number in the input
+ * clever. If we sort all the numbers, we can ensure that number1 < number2 < number3. That allows
+ * us to stop the loop early when 2020 - (number1 + number2) < number2.
  */
 fn part2(input: &str) -> i64 {
     // We store all the numbers in increasing order
@@ -64,9 +64,7 @@ fn part2(input: &str) -> i64 {
         .map(|line| line.parse::<i64>().unwrap())
         .collect();
     numbers_ordered.sort();
-
-    // This number is useful later on
-    let smallest_number = numbers_ordered[0];
+    println!("{:?}", numbers_ordered);
 
     // For quick lookups for number3
     let numbers_set:HashSet<i64> = input.lines()
@@ -75,10 +73,16 @@ fn part2(input: &str) -> i64 {
 
     // The big loop over candidates number1, number2, number3
     for (i, number1) in numbers_ordered.iter().enumerate() {
+        if 2020 - number1 < 2 * number1 {
+            // We know that number2 and number3 will be larger than number1. They cannot fit
+            // anymore between number1 and 2020. We are doomed!
+            panic!("No answer found!");
+        }
         for number2 in numbers_ordered[i+1..].iter() {
             let number3 = 2020 - (number1 + number2);
-            if number3 < smallest_number {
-                // No solution possible, all number3's will be too large
+            if &number3 < number2 {
+                // No solution possible for this combination of number1 and number2. We already
+                // tried all the numbers smaller than number2.
                 break;
             }
             if &number3 == number1 || &number3 == number2 {
@@ -88,8 +92,10 @@ fn part2(input: &str) -> i64 {
             if numbers_set.contains(&number3) {
                 return number1 * number2 * number3;
             }
+
         }
     }
+    // Dooooomed!
     panic!("No answer found!");
 }
 
