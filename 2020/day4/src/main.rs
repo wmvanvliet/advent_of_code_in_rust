@@ -57,98 +57,74 @@ fn part2(input: &str) -> i64 {
     n_correct_passports
 }
 
+
+
 #[derive(PartialEq, Debug)]
 enum Evaluation { VALID, PRESENT, INVALID }
 
 fn parse_passport(entry:&str) -> HashMap<&str, &str> {
     entry.split_whitespace()
-        .map(|pair| pair.split(':').next_tuple().unwrap())
+        .flat_map(|pair| pair.split(':')).tuples()
         .collect::<HashMap<_, _>>()
 }
 
 fn check_passport(passport:&HashMap<&str, &str>) -> Evaluation {
-    // let required_keys = vec!["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid", "cid"]
-    let required_keys = vec!["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
-    for key in required_keys {
-        if !passport.contains_key(&key) {
+    // let required_keys = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid", "cid"]
+    let required_keys = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
+    for key in required_keys.iter() {
+        if !passport.contains_key(key) {
             return Evaluation::INVALID;
         }
     }
+
     // At this point, all required keys are present. But are they valid?
-    match passport["byr"].parse::<u64>() {
-        Err(_) => return Evaluation::PRESENT,
-        Ok(byr) => {
-            if byr < 1920 || byr > 2002 {
-                return Evaluation::PRESENT;
-            }
-        },
-    }
-
-    match passport["iyr"].parse::<u64>() {
-        Err(_) => return Evaluation::PRESENT,
-        Ok(iyr) => {
-            if iyr < 2010 || iyr > 2020 {
-                return Evaluation::PRESENT;
-            }
-        },
-    }
-
-    match passport["eyr"].parse::<u64>() {
-        Err(_) => return Evaluation::PRESENT,
-        Ok(eyr) => {
-            if eyr < 2020 || eyr > 2030 {
-                return Evaluation::PRESENT;
-            }
-        },
-    }
-
-    match passport["hgt"].strip_suffix("cm") {
-        Some(hgt) => match hgt.parse::<u64>() {
-            Ok(n) => {
-                if n < 150 || n > 193 {
-                    return Evaluation::PRESENT;
-                }
-            },
-            Err(_) => return Evaluation::PRESENT,
-        },
-        None => match passport["hgt"].strip_suffix("in") {
-            Some(hgt) => match hgt.parse::<u64>() {
-                Ok(n) => {
-                    if n < 59 || n > 76 {
-                        return Evaluation::PRESENT;
-                    }
-                },
-                Err(_) => return Evaluation::PRESENT,
-            },
-            None => {
-                return Evaluation::PRESENT;
-            },
-        },
-    }
-
     let hcl_re = Regex::new(r"^#[0-9a-f]{6}$").unwrap();
-    if !hcl_re.is_match(passport["hcl"]) {
-        return Evaluation::PRESENT;
-    }
+    let valid = passport.iter().all(|(&k, v)| match k {
+        "byr" => {
+            match v.parse::<u64>() {
+                Ok(byr) => byr >= 1920 && byr <= 2002,
+                Err(_) => false,
+            }
+        },
+        "iyr" => {
+            match v.parse::<u64>() {
+                Ok(iyr) => iyr >= 2010 && iyr <= 2020,
+                Err(_) => false,
+            }
+        },
+        "eyr" => {
+            match v.parse::<u64>() {
+                Ok(eyr) => eyr >= 2020 && eyr <= 2030,
+                Err(_) => false,
+            }
+        },
+        "hgt" => {
+            if let Some(height_cm) = v.strip_suffix("cm") {
+                match height_cm.parse::<u64>() {
+                    Ok(n) => n >= 150 && n <= 193,
+                    Err(_) => false,
+                }
+            } else if let Some(height_in) = v.strip_suffix("in") {
+                match height_in.parse::<u64>() {
+                    Ok(n) => n >= 59 && n <= 76,
+                    Err(_) => false,
+                }
+            } else {
+                false
+            }
+        },
+        "hcl" => hcl_re.is_match(v),
+        "ecl" => ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].contains(v),
+        "pid" => v.len() == 9 && v.chars().all(|c| c.is_ascii_digit()),
+        "cid" => true,
+        _ => unreachable!()
+    });
 
-    let valid_ecl:HashSet<&str> = vec!["amb", "blu", "brn", "gry", "grn", "hzl", "oth"].into_iter().collect();
-    if !valid_ecl.contains(&passport["ecl"]) {
-        return Evaluation::PRESENT;
+    if valid {
+        Evaluation::VALID
+    } else {
+        Evaluation::PRESENT
     }
-
-    let pid_re = Regex::new(r"^\d{9}$").unwrap();
-    if !pid_re.is_match(passport["pid"]) {
-        return Evaluation::PRESENT;
-    }
-
-    /*
-    let cid_re = Regex::new(r"^\d{9}$").unwrap();
-    if !cid_re.is_match(passport["cid"]) {
-        return Evaluation::PRESENT;
-    }
-    */
-
-    Evaluation::VALID
 }
 
 /**
