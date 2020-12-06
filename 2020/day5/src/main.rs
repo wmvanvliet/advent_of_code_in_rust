@@ -27,16 +27,16 @@ fn strip_bom(input: &str) -> &str {
 /**
  * Solves part 1 of the puzzle.
  */
-fn part1(input: &str) -> i64 {
+fn part1(input: &str) -> u64 {
     input.lines().map(|ticket| parse_ticket(ticket)).max().unwrap()
 }
 
 /**
  * Solves part 2 of the puzzle.
  */
-fn part2(input: &str) -> i64 {
-    let seats:Vec<i64> = input.lines().map(|ticket| parse_ticket(ticket)).collect();
-    let seats_sum:i64 = seats.iter().sum();
+fn part2(input: &str) -> u64 {
+    let seats:Vec<u64> = input.lines().map(|ticket| parse_ticket(ticket)).collect();
+    let seats_sum:u64 = seats.iter().sum();
 
     // Compute the sum of the seats if all of them were present */
     let seats_min = seats.iter().min().unwrap();
@@ -50,18 +50,19 @@ fn part2(input: &str) -> i64 {
 /**
  * Binary search? Nah, binary number!
  */
-fn parse_ticket(ticket: &str) -> i64 {
-    let row_str = ticket[..7].replace('F', "0").replace('B', "1");
-    let row = u64::from_str_radix(&row_str, 2).unwrap();
-    let col_str = ticket[7..].replace('L', "0").replace('R', "1");
-    let col = u64::from_str_radix(&col_str, 2).unwrap();
-    (row * 8 + col) as i64
+fn parse_ticket(ticket: &str) -> u64 {
+    let bin_string = ticket
+        .replace('F', "0")
+        .replace('B', "1")
+        .replace('L', "0")
+        .replace('R', "1");
+    u64::from_str_radix(&bin_string, 2).unwrap()
 }
 
 /**
  * Quicky compute the sum of 1..n
  */
-fn euler_sum(n:i64) -> i64 {
+fn euler_sum(n:u64) -> u64 {
     n * (n + 1) / 2
 }
 
