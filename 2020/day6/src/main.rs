@@ -25,40 +25,42 @@ fn strip_bom(input: &str) -> &str {
     }
 }
 
+/*
+ * Windows uses different line endings. Sigh.
+ */
+#[cfg(windows)]
+const EMPTY_LINE: &'static str = "\r\n\r\n";
+#[cfg(not(windows))]
+const EMPTY_LINE: &'static str = "\n\n";
+
 /**
  * Solves part 1 of the puzzle.
  */
-fn part1(input: &str) -> i64 {
-    let mut sum_of_counts:i64 = 0;
-    for group in input.split("\r\n\r\n") {
-        let mut unique_answers:HashSet<char> = HashSet::new();
-        for person in group.lines() {
-            let unique_answers_for_person:HashSet<char> = person.trim().chars().collect();
-            unique_answers.extend(&unique_answers_for_person);
-        }
-        sum_of_counts += unique_answers.len() as i64;
-    }
-    sum_of_counts
+fn part1(input: &str) -> usize {
+    input.split(EMPTY_LINE)
+        .map(|group| {
+            group.lines()
+                .flat_map(|person| person.trim().chars())
+                .collect::<HashSet<_>>()
+                .len()
+        }).sum()
 }
 
 /**
  * Solves part 2 of the puzzle.
  */
-fn part2(input: &str) -> i64 {
-    let mut sum_of_counts:i64 = 0;
-    for group in input.split("\r\n\r\n") {
-        let mut unique_answers:HashSet<_> = HashSet::new();
-        for (i, person) in group.lines().enumerate() {
-            let unique_answers_for_person:HashSet<char> = person.trim().chars().collect();
-            if i == 0 {
-                unique_answers = unique_answers_for_person.clone();
-            } else {
-                unique_answers = unique_answers.intersection(&unique_answers_for_person).map(|x| *x).collect();
-            }
-        }
-        sum_of_counts += unique_answers.len() as i64;
-    }
-    sum_of_counts
+fn part2(input: &str) -> usize {
+    input.split(EMPTY_LINE)
+        .map(|group| {
+            let mut group_iter = group.lines()
+                .map(|person| person.trim().chars().collect::<HashSet<char>>());
+
+            // No "reduce" yet in Rust :(
+            // So we take out the first value manually and then fold
+            let first_group = group_iter.next().unwrap();
+            group_iter.fold(first_group, |x, y| x.intersection(&y).cloned().collect())
+                .len()
+        }).sum()
 }
 
 /**
@@ -70,11 +72,11 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(part1(""), 1);
+        assert_eq!(part1("abc\n\na\nb\nc\n\nab\nac\n\na\na\na\na\n\nb"), 5);
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(part2("abc\r\n\r\na\r\nb\r\nc\r\n\r\nab\r\nac\r\n\r\na\r\na\r\na\r\na\r\n\r\nb"), 6);
+        assert_eq!(part2("abc\n\na\nb\nc\n\nab\nac\n\na\na\na\na\n\nb"), 6);
     }
 }
