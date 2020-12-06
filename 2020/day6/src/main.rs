@@ -37,9 +37,11 @@ const EMPTY_LINE: &'static str = "\n\n";
  * Solves part 1 of the puzzle.
  */
 fn part1(input: &str) -> usize {
-    input.split(EMPTY_LINE)
+    input
+        .split(EMPTY_LINE)
         .map(|group| {
-            group.lines()
+            group
+                .lines()
                 .flat_map(|person| person.trim().chars())
                 .collect::<HashSet<_>>()
                 .len()
@@ -50,15 +52,25 @@ fn part1(input: &str) -> usize {
  * Solves part 2 of the puzzle.
  */
 fn part2(input: &str) -> usize {
-    input.split(EMPTY_LINE)
+    input
+        .split(EMPTY_LINE)
         .map(|group| {
-            let mut group_iter = group.lines()
-                .map(|person| person.trim().chars().collect::<HashSet<char>>());
+            let mut group_iter = group
+                .lines()
+                .map(|person| {
+                    person
+                        .trim()
+                        .chars()
+                        .collect::<HashSet<char>>()
+                });
 
             // No "reduce" yet in Rust :(
             // So we take out the first value manually and then fold
             let first_group = group_iter.next().unwrap();
-            group_iter.fold(first_group, |x, y| x.intersection(&y).cloned().collect())
+            group_iter
+                .fold(first_group, |x, y| {
+                    x.intersection(&y).cloned().collect()
+                })
                 .len()
         }).sum()
 }
