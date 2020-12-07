@@ -2,6 +2,12 @@ use std::io::{self, Read};
 use std::collections::HashMap;
 use itertools::Itertools;
 use regex::Regex;
+use lazy_static::lazy_static;
+use std::sync::Mutex;
+
+lazy_static! {
+    static ref CACHE: Mutex<HashMap<String, bool>> = Mutex::new(HashMap::new());
+}
 
 /**
  * This reads in the puzzle input from stdin. So you would call this program like:
@@ -76,16 +82,22 @@ fn parse_rules(input: &str) -> RuleBook {
  * Determine whether a bag with the given color must (eventually) contain a "shiny gold" bag.
  */
 fn must_contain_shiny_gold(color: &str, rules: &RuleBook) -> bool {
+    if CACHE.lock().unwrap().contains_key(color) {
+        return CACHE.lock().unwrap()[color];
+    }
     let must_contain = &rules[color];
     if must_contain.contains_key("shiny gold") {
+        CACHE.lock().unwrap().insert(String::from(color), true);
         return true
     } else {
         for must_contain_color in must_contain.keys() {
             if must_contain_shiny_gold(must_contain_color, rules) {
+                CACHE.lock().unwrap().insert(String::from(color), true);
                 return true;
             }
         }
     }
+    CACHE.lock().unwrap().insert(String::from(color), false);
     false
 }
 
