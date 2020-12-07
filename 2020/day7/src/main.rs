@@ -1,5 +1,5 @@
 use std::io::{self, Read};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use itertools::Itertools;
 use regex::Regex;
 
@@ -20,10 +20,9 @@ fn main() {
  * annoying.
  */
 fn strip_bom(input: &str) -> &str {
-    return if input.starts_with("\u{feff}") {
-        &input[3..]
-    } else {
-        input
+    match input.strip_prefix("\u{feff}") {
+        Some(x) => x,
+        _ => input
     }
 }
 
@@ -76,7 +75,7 @@ fn parse_rules(input: &str) -> RuleBook {
 /**
  * Determine whether a bag with the given color must (eventually) contain a "shiny gold" bag.
  */
-fn must_contain_shiny_gold(color: &String, rules: &RuleBook) -> bool {
+fn must_contain_shiny_gold(color: &str, rules: &RuleBook) -> bool {
     let must_contain = &rules[color];
     if must_contain.contains_key("shiny gold") {
         return true
@@ -93,7 +92,7 @@ fn must_contain_shiny_gold(color: &String, rules: &RuleBook) -> bool {
 /**
  * Count the total number of bags you have, if you have one bag of the given color.
  */
-fn count_bags(color: &String, rules: &RuleBook) -> i64 {
+fn count_bags(color: &str, rules: &RuleBook) -> i64 {
     let mut n_bags:i64 = 1;  // The bag itself
 
     // Add any bags that must be inside the bag
