@@ -20,10 +20,9 @@ fn main() {
  * annoying.
  */
 fn strip_bom(input: &str) -> &str {
-    return if input.starts_with("\u{feff}") {
-        &input[3..]
-    } else {
-        input
+    match input.strip_prefix("\u{feff}") {
+        Some(x) => x,
+        _ => input
     }
 }
 
