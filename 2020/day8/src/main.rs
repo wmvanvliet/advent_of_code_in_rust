@@ -47,7 +47,7 @@ fn part2(input: &str) -> i64 {
         computer.memory[i] = match instr {
             Instruction::NOP(n) => Instruction::JMP(*n),
             Instruction::JMP(n) => Instruction::NOP(*n),
-            Instruction::ACC(n) => Instruction::ACC(*n),
+            _ => continue,
         };
         // Does it halt now?
         if computer.run() {
