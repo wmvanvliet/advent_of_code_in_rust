@@ -45,10 +45,10 @@ fn part2(input: &str) -> i64 {
     for i in 0..computer.memory.len() {
         let instr = computer.memory.get(i).unwrap();
         // Change NOP <-> JMP
-        computer.memory[i] = match instr.op {
-            Operation::NOP => Instruction{op: Operation::JMP, arg: instr.arg},
-            Operation::JMP => Instruction{op: Operation::NOP, arg: instr.arg},
-            Operation::ACC => Instruction{op: Operation::ACC, arg: instr.arg},
+        computer.memory[i] = match instr {
+            Instruction::NOP(n) => Instruction::JMP(*n),
+            Instruction::JMP(n) => Instruction::NOP(*n),
+            Instruction::ACC(n) => Instruction::ACC(*n),
         };
         // Does it halt now?
         if computer.run() {
@@ -61,16 +61,10 @@ fn part2(input: &str) -> i64 {
 }
 
 #[derive(Debug)]
-enum Operation {
-    NOP,
-    ACC,
-    JMP,
-}
-
-#[derive(Debug)]
-struct Instruction {
-    op: Operation,
-    arg: i64,
+enum Instruction {
+    NOP(i64),
+    ACC(i64),
+    JMP(i64),
 }
 
 // Error indicating an instruction couldn't be parsed
@@ -83,16 +77,13 @@ impl FromStr for Instruction {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (op_str, arg_str) = s.trim().split_whitespace().next_tuple().unwrap();
-        let op = match op_str {
-            "nop" => Operation::NOP,
-            "acc" => Operation::ACC,
-            "jmp" => Operation::JMP,
-            _ => return Err(ParseError)
-        };
-        Ok(Instruction {
-            op: op,
-            arg: arg_str.parse().unwrap(),
-        })
+        let arg = arg_str.parse().unwrap();
+        match op_str {
+            "nop" => Ok(Instruction::NOP(arg)),
+            "acc" => Ok(Instruction::ACC(arg)),
+            "jmp" => Ok(Instruction::JMP(arg)),
+            _ => Err(ParseError)
+        }
     }
 }
 
@@ -122,10 +113,10 @@ impl Computer {
      */
     fn step(&mut self) {
         let instr = self.memory.get(self.instr_ptr).unwrap();
-        match instr.op {
-            Operation::NOP => { self.instr_ptr += 1 },
-            Operation::ACC => { self.acc += instr.arg; self.instr_ptr += 1},
-            Operation::JMP => self.instr_ptr = (self.instr_ptr as i64 + instr.arg) as usize,
+        match instr {
+            Instruction::NOP(_) => { self.instr_ptr += 1 },
+            Instruction::ACC(n) => { self.acc += n; self.instr_ptr += 1},
+            Instruction::JMP(n) => self.instr_ptr = (self.instr_ptr as i64 + n) as usize,
         }
     }
 
