@@ -34,7 +34,7 @@ fn part1(input: &str) -> i64 {
     for line in input.lines() {
         let instr:char = line.trim().chars().nth(0).unwrap();
         let amount:i64 = line.trim()[1..].parse().unwrap();
-        println!("{} {}", instr, amount);
+        println!("instr: {} {}", instr, amount);
 
         match instr {
             'N' => y += amount,
@@ -57,7 +57,7 @@ fn part1(input: &str) -> i64 {
         if facing < 0 {
             facing = 360 + facing;
         }
-        println!("{}, {}, {}", x, y, facing);
+        println!("ship: {}, {}, {}", x, y, facing);
     }
 
     x.abs() + y.abs()
@@ -75,7 +75,7 @@ fn part2(input: &str) -> i64 {
     for line in input.lines() {
         let instr:char = line.trim().chars().nth(0).unwrap();
         let amount:i64 = line.trim()[1..].parse().unwrap();
-        println!("{} {}", instr, amount);
+        println!("instr: {} {}", instr, amount);
 
         match instr {
             'N' => waypoint_y += amount,
@@ -84,17 +84,41 @@ fn part2(input: &str) -> i64 {
             'E' => waypoint_x += amount,
             'L' => {
                 match amount {
-                    90 => {let (new_waypoint_x, new_waypoint_y) = (-waypoint_y, waypoint_x); waypoint_x = new_waypoint_x; waypoint_y = new_waypoint_y;}
-                    180 => {let (new_waypoint_x, new_waypoint_y) = (-waypoint_x, -waypoint_y); waypoint_x = new_waypoint_x; waypoint_y = new_waypoint_y;},
-                    270 => {let (new_waypoint_x, new_waypoint_y) = (waypoint_y, -waypoint_x); waypoint_x = new_waypoint_x; waypoint_y = new_waypoint_y;},
+                    90 => {
+                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_y, waypoint_x);
+                        waypoint_x = new_waypoint_x;
+                        waypoint_y = new_waypoint_y;
+                    }
+                    180 => {
+                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_x, -waypoint_y);
+                        waypoint_x = new_waypoint_x;
+                        waypoint_y = new_waypoint_y;
+                    },
+                    270 => {
+                        let (new_waypoint_x, new_waypoint_y) = (waypoint_y, -waypoint_x);
+                        waypoint_x = new_waypoint_x;
+                        waypoint_y = new_waypoint_y;
+                    },
                     _ => panic!("Invalid direction"),
                 }
             }
             'R' => {
                 match amount {
-                    90 => {let (new_waypoint_x, new_waypoint_y) = (waypoint_y, -waypoint_x); waypoint_x = new_waypoint_x; waypoint_y = new_waypoint_y;},
-                    180 => {let (new_waypoint_x, new_waypoint_y) = (-waypoint_x, -waypoint_y); waypoint_x = new_waypoint_x; waypoint_y = new_waypoint_y;},
-                    270 => {let (new_waypoint_x, new_waypoint_y) = (-waypoint_y, waypoint_x); waypoint_x = new_waypoint_x; waypoint_y = new_waypoint_y;},
+                    90 => {
+                        let (new_waypoint_x, new_waypoint_y) = (waypoint_y, -waypoint_x);
+                        waypoint_x = new_waypoint_x;
+                        waypoint_y = new_waypoint_y;
+                    },
+                    180 => {
+                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_x, -waypoint_y);
+                        waypoint_x = new_waypoint_x;
+                        waypoint_y = new_waypoint_y;
+                    },
+                    270 => {
+                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_y, waypoint_x);
+                        waypoint_x = new_waypoint_x;
+                        waypoint_y = new_waypoint_y;
+                    },
                     _ => panic!("Invalid direction"),
                 }
             }
@@ -104,7 +128,7 @@ fn part2(input: &str) -> i64 {
             }
             _ => panic!("Invalid instruction"),
         }
-        println!("{}, {}    {} {}", waypoint_x, waypoint_y, ship_x, ship_y);
+        println!("ship: {}, {}    waypoint: {} {}", waypoint_x, waypoint_y, ship_x, ship_y);
     }
 
     ship_x.abs() + ship_y.abs()
