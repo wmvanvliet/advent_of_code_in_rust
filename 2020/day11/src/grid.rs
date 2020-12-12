@@ -107,6 +107,14 @@ impl Grid {
     pub fn look_at(&self, pos: (i64, i64), dir: Direction) -> LookAtIterator {
         LookAtIterator { grid: &self, dir: dir, pos: pos }
     }
+
+    pub fn neighbours4(&self, pos: (i64, i64)) -> NeighboursIterator {
+        NeighboursIterator { grid: &self, pos: pos, dirs: &Direction::DIRECTIONS, cur_dir: 0 }
+    }
+
+    pub fn neighbours8(&self, pos: (i64, i64)) -> NeighboursIterator {
+        NeighboursIterator { grid: &self, pos: pos, dirs: &Direction::DIRECTIONSDIAG, cur_dir: 0 }
+    }
 }
 
 // Parse a string into a Cell
@@ -163,5 +171,27 @@ impl<'a> Iterator for LookAtIterator<'a> {
             Ok(chr) => Some(chr),
             Err(_) => None,
         }
+    }
+}
+
+// Iterator returned from the neighbours4 function
+pub struct NeighboursIterator<'a> {
+    grid: &'a Grid,
+    pos: (i64, i64),
+    dirs: &'a [Direction],
+    cur_dir: usize,
+}
+
+impl<'a> Iterator for NeighboursIterator<'a> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<char> {
+        while self.cur_dir < self.dirs.len() {
+            match self.grid.get(self.dirs[self.cur_dir].step(self.pos)) {
+                Ok(chr) => {self.cur_dir += 1; return Some(chr)},
+                Err(_) => {self.cur_dir += 1},
+            }
+        }
+        None
     }
 }

@@ -68,8 +68,8 @@ fn step1(map: &Grid) -> Grid {
     let mut new_map = map.clone();
 
     for pos in map.iter_pos() {
-        let n_occupied = Direction::DIRECTIONSDIAG.iter()
-            .filter(|dir| map.get(dir.step(pos)).unwrap_or('~') == '#')
+        let n_occupied = map.neighbours8(pos)
+            .filter(|&chr| chr == '#')
             .count();
 
         // If a seat is empty (L) and there are no occupied seats adjacent to it, the seat
