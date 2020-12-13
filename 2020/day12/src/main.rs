@@ -1,4 +1,8 @@
+#[macro_use] extern crate itertools;
+mod grid;
+
 use std::io::{self, Read};
+use grid::{Grid, Direction};
 
 /**
  * This reads in the puzzle input from stdin. So you would call this program like:
@@ -27,9 +31,8 @@ fn strip_bom(input: &str) -> &str {
  * Solves part 1 of the puzzle.
  */
 fn part1(input: &str) -> i64 {
-    let mut x: i64 = 0;
-    let mut y: i64 = 0;
-    let mut facing: i64 = 90;
+    let mut pos: (i64, i64) = (0, 0);
+    let mut dir = Direction::E;
 
     for line in input.lines() {
         let instr:char = line.trim().chars().nth(0).unwrap();
@@ -37,40 +40,27 @@ fn part1(input: &str) -> i64 {
         println!("instr: {} {}", instr, amount);
 
         match instr {
-            'N' => y += amount,
-            'S' => y -= amount,
-            'W' => x -= amount,
-            'E' => x += amount,
-            'L' => facing = (facing - amount) % 360,
-            'R' => facing = (facing + amount) % 360,
-            'F' => {
-                match facing {
-                    0 => y += amount,
-                    90 => x += amount,
-                    180 => y -= amount,
-                    270 => x -= amount,
-                    _ => panic!("Invalid direction"),
-                }
-            }
+            'N' => pos = Direction::N.stepn(pos, amount),
+            'S' => pos = Direction::S.stepn(pos, amount),
+            'W' => pos = Direction::W.stepn(pos, amount),
+            'E' => pos = Direction::E.stepn(pos, amount),
+            'L' => dir = dir.turn_left(),
+            'R' => dir = dir.turn_right(),
+            'F' => pos = dir.stepn(pos, amount),
             _ => panic!("Invalid instruction"),
         }
-        if facing < 0 {
-            facing = 360 + facing;
-        }
-        println!("ship: {}, {}, {}", x, y, facing);
+        println!("ship: {:?}, {:?}", pos, dir);
     }
 
-    x.abs() + y.abs()
+    pos.0.abs() + pos.1.abs()
 }
 
 /**
  * Solves part 2 of the puzzle.
  */
 fn part2(input: &str) -> i64 {
-    let mut waypoint_x: i64 = 10;
-    let mut waypoint_y: i64 = 1;
-    let mut ship_x: i64 = 0;
-    let mut ship_y: i64 = 0;
+    let mut waypoint: (i64, i64) = (10, 1);
+    let mut ship: (i64, i64) = (0, 0);
 
     for line in input.lines() {
         let instr:char = line.trim().chars().nth(0).unwrap();
@@ -78,60 +68,33 @@ fn part2(input: &str) -> i64 {
         println!("instr: {} {}", instr, amount);
 
         match instr {
-            'N' => waypoint_y += amount,
-            'S' => waypoint_y -= amount,
-            'W' => waypoint_x -= amount,
-            'E' => waypoint_x += amount,
+            'N' => waypoint = Direction::N.stepn(waypoint, amount),
+            'S' => waypoint = Direction::S.stepn(waypoint, amount),
+            'W' => waypoint = Direction::W.stepn(waypoint, amount),
+            'E' => waypoint = Direction::E.stepn(waypoint, amount),
             'L' => {
                 match amount {
-                    90 => {
-                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_y, waypoint_x);
-                        waypoint_x = new_waypoint_x;
-                        waypoint_y = new_waypoint_y;
-                    }
-                    180 => {
-                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_x, -waypoint_y);
-                        waypoint_x = new_waypoint_x;
-                        waypoint_y = new_waypoint_y;
-                    },
-                    270 => {
-                        let (new_waypoint_x, new_waypoint_y) = (waypoint_y, -waypoint_x);
-                        waypoint_x = new_waypoint_x;
-                        waypoint_y = new_waypoint_y;
-                    },
+                    90 => waypoint = (-waypoint.1, waypoint.0),
+                    180 => waypoint = (-waypoint.0, -waypoint.1),
+                    270 => waypoint = (waypoint.1, -waypoint.0),
                     _ => panic!("Invalid direction"),
                 }
             }
             'R' => {
                 match amount {
-                    90 => {
-                        let (new_waypoint_x, new_waypoint_y) = (waypoint_y, -waypoint_x);
-                        waypoint_x = new_waypoint_x;
-                        waypoint_y = new_waypoint_y;
-                    },
-                    180 => {
-                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_x, -waypoint_y);
-                        waypoint_x = new_waypoint_x;
-                        waypoint_y = new_waypoint_y;
-                    },
-                    270 => {
-                        let (new_waypoint_x, new_waypoint_y) = (-waypoint_y, waypoint_x);
-                        waypoint_x = new_waypoint_x;
-                        waypoint_y = new_waypoint_y;
-                    },
+                    90 => waypoint = (waypoint.1, -waypoint.0),
+                    180 => waypoint = (-waypoint.0, -waypoint.1),
+                    270 => waypoint = (-waypoint.1, waypoint.0),
                     _ => panic!("Invalid direction"),
                 }
             }
-            'F' => {
-                ship_x += waypoint_x * amount;
-                ship_y += waypoint_y * amount;
-            }
+            'F' => ship = (ship.0 + amount * waypoint.0, ship.1 + amount * waypoint.1),
             _ => panic!("Invalid instruction"),
         }
-        println!("ship: {}, {}    waypoint: {} {}", waypoint_x, waypoint_y, ship_x, ship_y);
+        println!("ship: {:?}  waypoint: {:?}", ship, waypoint);
     }
 
-    ship_x.abs() + ship_y.abs()
+    ship.0.abs() + ship.1.abs()
 }
 
 /**
