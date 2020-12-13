@@ -63,12 +63,11 @@ fn part2(input: &str) -> usize {
     count_n_occupied(&map)
 }
 
-
 fn step1(map: &Grid) -> Grid {
     let mut new_map = map.clone();
 
     for pos in map.iter_pos() {
-        let n_occupied = map.neighbours8(pos)
+        let n_occupied = map.neighbours_diag(pos)
             .filter(|&chr| chr == '#')
             .count();
 
@@ -91,7 +90,7 @@ fn step2(map: &Grid) -> Grid {
     let mut new_map = map.clone();
 
     for pos in map.iter_pos() {
-        let n_occupied = Direction::DIRECTIONSDIAG.iter()
+        let n_occupied = Direction::DIRECTIONS_DIAG.iter()
             .filter(|dir| {
                 for chr in map.look_at(pos, **dir) {
                     if chr == '#' {

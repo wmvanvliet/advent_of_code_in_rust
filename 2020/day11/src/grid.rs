@@ -12,61 +12,106 @@ pub struct Grid {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Direction {
-    dx: i64,
-    dy: i64,
-}
+pub enum Direction { N, NE, E, SE, S, SW, W, NW }
+
+// Error indicating number of degrees cannot be parsed to a direction
+#[derive(Debug, Clone)]
+pub struct InvalidDegrees;
 
 impl Direction {
-    pub const NORTH:Direction = Direction { dx: 0, dy: -1 };
-    pub const NORTHEAST:Direction = Direction { dx: 1, dy: -1 };
-    pub const EAST:Direction = Direction { dx: 1, dy: 0 };
-    pub const SOUTHEAST:Direction = Direction { dx: 1, dy: 1 };
-    pub const SOUTH:Direction = Direction { dx: 0, dy: 1 };
-    pub const SOUTHWEST:Direction = Direction { dx: -1, dy: 1 };
-    pub const WEST:Direction = Direction { dx: -1, dy: 0 };
-    pub const NORTHWEST:Direction = Direction { dx: -1, dy: -1 };
-    pub const DIRECTIONS:[Direction; 4] = [Self::NORTH, Self::EAST, Self::SOUTH, Self::WEST];
-    pub const DIRECTIONSDIAG:[Direction; 8] = [Self::NORTH, Self::NORTHEAST, Self::EAST, Self::SOUTHEAST, Self::SOUTH, Self::SOUTHWEST, Self::WEST, Self::NORTHWEST];
+    pub const DIRECTIONS:[Direction; 4] = [Self::N, Self::E, Self::S, Self::W];
+    pub const DIRECTIONS_DIAG:[Direction; 8] = [Self::N, Self::NE, Self::E, Self::SE, Self::S, Self::SW, Self::W, Self::NW];
 
     // Move a position one step into the direction indicated by this object.
     pub fn step(&self, pos: (i64, i64)) -> (i64, i64) {
-        (pos.0 + self.dx, pos.1 + self.dy)
+        self.stepn(pos, 1)
     }
 
     // Move a position n steps into the direction indicated by this object.
-    pub fn stepn(&self, pos: (i64, i64), n: usize) -> (i64, i64) {
-        (pos.0 + n as i64 * self.dx, pos.1 + n as i64 * self.dy)
+    pub fn stepn(&self, pos: (i64, i64), n: i64) -> (i64, i64) {
+        match self {
+            Direction::N => (pos.0, pos.1 + n),
+            Direction::NE => (pos.0 + n, pos.1 + n),
+            Direction::E => (pos.0 + n, pos.1),
+            Direction::SE => (pos.0 + n, pos.1 - n),
+            Direction::S => (pos.0, pos.1 - n),
+            Direction::SW => (pos.0 - n, pos.1 - n),
+            Direction::W => (pos.0 - n, pos.1),
+            Direction::NW => (pos.0 - n, pos.1 + n),
+        }
+    }
+
+    // Make a Direction from a number of degrees. North is 0 degrees.
+    pub fn from_deg(deg: i64) -> Result<Direction, InvalidDegrees> {
+        match deg {
+            0 => Ok(Direction::N),
+            45 => Ok(Direction::NE),
+            90 => Ok(Direction::E),
+            135 => Ok(Direction::SE),
+            180 => Ok(Direction::S),
+            225 => Ok(Direction::SW),
+            270 => Ok(Direction::W),
+            315 => Ok(Direction::NW),
+            _ => Err(InvalidDegrees),
+        }
+    }
+
+    // Convert a Direction to a number of degrees. North is 0 degrees.
+    pub fn to_deg(&self) -> i64 {
+        match self {
+            Self::N => 0,
+            Self::NE => 45,
+            Self::E => 90,
+            Self::SE => 135,
+            Self::S => 180,
+            Self::SW => 225,
+            Self::W => 270,
+            Self::NW => 315,
+        }
     }
 
     // Turn this direction 90 degrees to the left
     pub fn turn_left(&self) -> Direction {
         match *self {
-            Self::NORTH => Self::WEST,
-            Self::EAST => Self::NORTH,
-            Self::SOUTH => Self::EAST,
-            Self::WEST => Self::SOUTH,
-            Self::NORTHEAST => Self::NORTHWEST,
-            Self::SOUTHEAST => Self::NORTHEAST,
-            Self::SOUTHWEST => Self::SOUTHEAST,
-            Self::NORTHWEST => Self::SOUTHWEST,
-            _ => panic!("Cannot turn an invalid direction")
+            Self::N => Self::W,
+            Self::E => Self::N,
+            Self::S => Self::E,
+            Self::W => Self::S,
+            Self::NE => Self::NW,
+            Self::SE => Self::NE,
+            Self::SW => Self::SE,
+            Self::NW => Self::SW,
         }
     }
 
     // Turn this direction 90 degrees to the right
     pub fn turn_right(&self) -> Direction {
         match *self {
-            Self::NORTH => Self::EAST,
-            Self::EAST => Self::SOUTH,
-            Self::SOUTH => Self::WEST,
-            Self::WEST => Self::NORTH,
-            Self::NORTHEAST => Self::SOUTHEAST,
-            Self::SOUTHEAST => Self::SOUTHWEST,
-            Self::SOUTHWEST => Self::NORTHWEST,
-            Self::NORTHWEST => Self::NORTHEAST,
-            _ => panic!("Cannot turn an invalid direction")
+            Self::N => Self::E,
+            Self::E => Self::S,
+            Self::S => Self::W,
+            Self::W => Self::N,
+            Self::NE => Self::SE,
+            Self::SE => Self::SW,
+            Self::SW => Self::NW,
+            Self::NW => Self::NE,
         }
+    }
+
+    // Turn this direction a given amount of degrees to the right
+    pub fn turn_right_deg(&self, deg: i64) -> Result<Direction, InvalidDegrees> {
+        // 0 degrees is north
+        let mut facing = self.to_deg();
+        facing = (facing + deg) % 360;
+        while facing < 0 {
+            facing += 360;
+        }
+        Direction::from_deg(facing)
+    }
+
+    // Turn this direction a given amount of degrees to the left
+    pub fn turn_left_deg(&self, deg: i64) -> Result<Direction, InvalidDegrees> {
+        self.turn_right_deg(-deg)
     }
 }
 
@@ -108,12 +153,12 @@ impl Grid {
         LookAtIterator { grid: &self, dir: dir, pos: pos }
     }
 
-    pub fn neighbours4(&self, pos: (i64, i64)) -> NeighboursIterator {
+    pub fn neighbours(&self, pos: (i64, i64)) -> NeighboursIterator {
         NeighboursIterator { grid: &self, pos: pos, dirs: &Direction::DIRECTIONS, cur_dir: 0 }
     }
 
-    pub fn neighbours8(&self, pos: (i64, i64)) -> NeighboursIterator {
-        NeighboursIterator { grid: &self, pos: pos, dirs: &Direction::DIRECTIONSDIAG, cur_dir: 0 }
+    pub fn neighbours_diag(&self, pos: (i64, i64)) -> NeighboursIterator {
+        NeighboursIterator { grid: &self, pos: pos, dirs: &Direction::DIRECTIONS_DIAG, cur_dir: 0 }
     }
 }
 
@@ -162,6 +207,7 @@ pub struct LookAtIterator<'a> {
     pos: (i64, i64),
 }
 
+// Look at all the cells in a certain direction (X-ray vision)
 impl<'a> Iterator for LookAtIterator<'a> {
     type Item = char;
 
@@ -182,6 +228,7 @@ pub struct NeighboursIterator<'a> {
     cur_dir: usize,
 }
 
+// Iterate over all the neighbours of a cell
 impl<'a> Iterator for NeighboursIterator<'a> {
     type Item = char;
 
