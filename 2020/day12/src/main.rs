@@ -2,7 +2,7 @@
 mod grid;
 
 use std::io::{self, Read};
-use grid::{Grid, Direction};
+use grid::Direction;
 
 /**
  * This reads in the puzzle input from stdin. So you would call this program like:
@@ -37,19 +37,19 @@ fn part1(input: &str) -> i64 {
     for line in input.lines() {
         let instr:char = line.trim().chars().nth(0).unwrap();
         let amount:i64 = line.trim()[1..].parse().unwrap();
-        println!("instr: {} {}", instr, amount);
+        //println!("instr: {} {}", instr, amount);
 
         match instr {
             'N' => pos = Direction::N.stepn(pos, amount),
             'S' => pos = Direction::S.stepn(pos, amount),
             'W' => pos = Direction::W.stepn(pos, amount),
             'E' => pos = Direction::E.stepn(pos, amount),
-            'L' => dir = dir.turn_left(),
-            'R' => dir = dir.turn_right(),
+            'L' => dir = dir.turn_left_deg(amount).unwrap(),
+            'R' => dir = dir.turn_right_deg(amount).unwrap(),
             'F' => pos = dir.stepn(pos, amount),
             _ => panic!("Invalid instruction"),
         }
-        println!("ship: {:?}, {:?}", pos, dir);
+        //println!("ship: {:?}, {:?}", pos, dir);
     }
 
     pos.0.abs() + pos.1.abs()
@@ -65,7 +65,7 @@ fn part2(input: &str) -> i64 {
     for line in input.lines() {
         let instr:char = line.trim().chars().nth(0).unwrap();
         let amount:i64 = line.trim()[1..].parse().unwrap();
-        println!("instr: {} {}", instr, amount);
+        //println!("instr: {} {}", instr, amount);
 
         match instr {
             'N' => waypoint = Direction::N.stepn(waypoint, amount),
@@ -91,7 +91,7 @@ fn part2(input: &str) -> i64 {
             'F' => ship = (ship.0 + amount * waypoint.0, ship.1 + amount * waypoint.1),
             _ => panic!("Invalid instruction"),
         }
-        println!("ship: {:?}  waypoint: {:?}", ship, waypoint);
+        //println!("ship: {:?}  waypoint: {:?}", ship, waypoint);
     }
 
     ship.0.abs() + ship.1.abs()
