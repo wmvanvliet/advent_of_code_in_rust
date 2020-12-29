@@ -42,11 +42,14 @@ fn part1(input: &str) -> u64 {
  */
 fn part2(input: &str) -> u64 {
     let puzzle: Puzzle = input.parse().unwrap();
+
+    // Drop invalid tickets
     let valid_tickets: Vec<_> = puzzle.nearby_tickets
         .iter()
         .filter(|ticket| find_invalid_numbers(ticket, &puzzle.rules).len() == 0)
         .collect();
 
+    // For each field, find all possible names for which the corresponding rule is satisfied
     let n_fields = puzzle.your_ticket.len();
     let mut possible_field_names: Vec<HashSet<&String>> = (0..n_fields)
         .map(|field_num|
@@ -60,11 +63,14 @@ fn part2(input: &str) -> u64 {
         )
         .collect();
 
+
+    // Start decyphering field names one at the time.
+    // A field name can be decyphered when there is only one possible name for it.
     let mut decyphered_ticket: HashMap<&str, u64> = HashMap::new();
     let mut unassigned_names: HashSet<_> = puzzle.rules.keys().collect();
     while !unassigned_names.is_empty() {
         let field_num = possible_field_names.iter().position(|names| names.len() == 1).unwrap();
-        let name = possible_field_names[field_num].iter().next().unwrap().clone();
+        let name = possible_field_names[field_num].iter().copied().next().unwrap();
         decyphered_ticket.insert(name, puzzle.your_ticket[field_num]);
         unassigned_names.remove(name);
         for names in possible_field_names.iter_mut() {
@@ -72,6 +78,7 @@ fn part2(input: &str) -> u64 {
         }
     }
 
+    // Multiple all fields that start with "departure"
     decyphered_ticket.iter()
         .filter(|(name, _)| name.starts_with("departure"))
         .map(|(_, value)| value)
