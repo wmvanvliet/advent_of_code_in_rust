@@ -78,7 +78,7 @@ fn part2(input: &str) -> u64 {
         }
     }
 
-    // Multiple all fields that start with "departure"
+    // Multiply all fields that start with "departure"
     decyphered_ticket.iter()
         .filter(|(name, _)| name.starts_with("departure"))
         .map(|(_, value)| value)
