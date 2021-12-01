@@ -63,7 +63,6 @@ fn parse_equation(chars: &[char], part1: bool) -> (i64, &[char]) {
 
     let (exp, mut chars) = parse_expression(&chars, part1);
     exp_stack.push(exp);
-    let mut i:u64 = 0;
     loop {
         let op = chars[0];
         chars = &chars[1..];
@@ -82,13 +81,12 @@ fn parse_equation(chars: &[char], part1: bool) -> (i64, &[char]) {
         chars = c;
         exp_stack.push(exp);
 
-        if chars.len() == 0 || chars[0] == ')' || i > 10 {
+        if chars.len() == 0 || chars[0] == ')' {
             while op_stack.len() > 0 {
                 do_operator(&mut op_stack, &mut exp_stack);
             }
             return (exp_stack.pop().unwrap(), chars)
         }
-        i += 1;
     }
 }
 
