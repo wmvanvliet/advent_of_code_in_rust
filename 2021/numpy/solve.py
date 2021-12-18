@@ -391,7 +391,7 @@ for row in grid:
 
 
 ## Day 14
-with open('day14_test.txt') as f:
+with open('day14_input.txt') as f:
     template = f.readline().strip()
     pairs = Counter(zip(template[:-1], template[1:]))
     f.readline()
