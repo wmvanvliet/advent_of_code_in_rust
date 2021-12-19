@@ -5,10 +5,12 @@ from collections import deque, Counter, defaultdict
 from copy import deepcopy
 from itertools import chain
 from scipy.signal import convolve2d
+from scipy.spatial import distance
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import heapq
 import numba
+from sklearn.linear_model import LinearRegression
 
 ## Day 1
 depths = np.loadtxt('day1_input.txt')
@@ -559,3 +561,153 @@ bits = ''.join([f'{byte:08b}' for byte in bytes.fromhex(hex_input)])
 packets = parse_packets(bits)
 print('Day 16, part 1:', sum([packet.version for packet, _ in packets]))
 print('Day 16, part 2:', evaluate_next(parse_packets(bits))[0])
+
+
+## Day 18
+def tokenize(s):
+    tokens = list()
+    num = ''
+    for ch in s.strip():
+        if ch in string.digits:
+            tokens.append(int(ch))
+        elif ch != ',':
+            tokens.append(ch)
+    return tokens
+
+def explode(number):
+    depth = 0
+    first_num_to_the_left = None
+    for i, ch in enumerate(number):
+        if ch == '[':
+            depth += 1
+        elif ch == ']':
+            depth -= 1
+        elif type(ch) == int:
+            first_num_to_the_left = (i, ch)
+
+        if depth == 5:
+            left, right = number[i + 1], number[i + 2]
+            if first_num_to_the_left is not None:
+                res = number[:first_num_to_the_left[0]]
+                res.append(first_num_to_the_left[1] + left)
+                res += number[first_num_to_the_left[0] + 1:i]
+            else:
+                res = number[:i]
+
+            res.append(0)
+
+            for j in range(i + 3, len(number)):
+                if type(number[j]) == int:
+                    first_num_to_the_right = (j, number[j])
+                    break
+            else:
+                first_num_to_the_right = None
+
+            if first_num_to_the_right is not None:
+                res += number[i + 4:first_num_to_the_right[0]]
+                res.append(first_num_to_the_right[1] + right)
+                res += number[first_num_to_the_right[0] + 1:]
+            else:
+                res += number[i + 4:]
+
+            return res
+    return number
+
+def split(number):
+    for i, n in enumerate(number):
+        if type(n) == int and n > 9:
+            left = int(np.floor(n / 2))
+            right = int(np.ceil(n / 2))
+            return number[:i] + ['[', left, right, ']'] + number[i + 1:]
+    return number
+
+def add(a, b):
+    return reduce(['['] + a + b + [']'])
+
+def reduce(number):
+    while True:
+        after_explode = explode(number)
+        if after_explode != number:
+            number = after_explode
+            continue
+        after_split = split(number)
+        if after_split != number:
+            number = after_split
+            continue
+        return number
+
+def magnitude(number):
+    stack = list()
+    for ch in number:
+        if type(ch) == int:
+            stack.append(ch)
+        elif ch == ']':
+            right = stack.pop()
+            left = stack.pop()
+            stack.append(3 * left + 2 * right)
+    return stack.pop()
+
+with open('day18_input.txt') as f:
+     numbers = [tokenize(line) for line in f.readlines()]
+num = add(numbers[0], numbers[1])
+for number in numbers[2:]:
+    num = add(num, number)
+print('Day 18, part 1:', magnitude(num))
+
+mags = []
+for i, a in enumerate(numbers):
+    for j, b in enumerate(numbers):
+        if i == j:
+            continue
+        mags.append(magnitude(add(a, b)))
+print('Day 18, part 2:', max(mags))
+
+
+## Day 19
+scanners = []
+with open('day19_input.txt') as f:
+    for line in f:
+        if line.startswith('--- scanner '):
+            scanner = []
+        elif line == '\n':
+            scanners.append(np.array(scanner))
+        else:
+            scanner.append([int(i) for i in line.split(',')])
+    scanners.append(np.array(scanner))
+
+def find_scanner_transform(a, b):
+    """Find the transform from scanner b relative to scanner a."""
+    d_a = distance.squareform(distance.pdist(a, metric='cityblock'))
+    d_a = [set(d) for d in d_a]
+    d_b = distance.squareform(distance.pdist(b, metric='cityblock'))
+    d_b = [set(d) for d in d_b]
+
+    # Match beacons by distance pattern
+    scores = np.array([[len(a) - len(d1 - d2) for d2 in d_b] for d1 in d_a])
+    i_a, i_b = np.where(scores >= 12)
+    if len(i_a) < 12 or len(i_b) < 12:
+        return None  # Not enough beacons match
+
+    # Determine transform of scanner b relative to scanner a
+    return LinearRegression().fit(b[i_b], a[i_a])
+
+transformed_scanners = {0: scanners[0]}
+transforms = dict()
+while len(transformed_scanners) < len(scanners)
+    for i, scanner in enumerate(scanners):
+        if i in transformed_scanners:
+            continue
+        for j, beacons in transformed_scanners.items():
+            m = find_scanner_transform(beacons, scanner)
+            if m is None:
+                continue
+            transforms[i] = m
+            transformed_scanners[i] = m.predict(scanner).round(0).astype('int')
+            break
+all_beacons = np.unique(np.vstack(list(transformed_scanners.values())), axis=0)
+
+scanner_positions = np.array([m.intercept_ for m in transforms.values()]).round(0).astype('int')
+scanner_positions = np.vstack((scanner_positions, [[0, 0, 0]]))
+
+print('Day 19, part 1:', len(all_beacons))
+print('Day 19, part 2:', int(distance.pdist(scanner_positions, metric='cityblock').max()))
