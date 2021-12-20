@@ -559,3 +559,72 @@ bits = ''.join([f'{byte:08b}' for byte in bytes.fromhex(hex_input)])
 packets = parse_packets(bits)
 print('Day 16, part 1:', sum([packet.version for packet, _ in packets]))
 print('Day 16, part 2:', evaluate_next(parse_packets(bits))[0])
+
+
+## Day 17
+with open('day17_input.txt') as f:
+    x, y = f.readline().split(', ')
+    target_x = x.split('=')[1].split('..')
+    target_y = y.split('=')[1].split('..')
+target_x = int(target_x[0]), int(target_x[1])
+target_y = int(target_y[0]), int(target_y[1])
+
+def pos_at_zero_vel(init_vel):
+    """Compute the position at which the velocity reaches zero."""
+    return (init_vel ** 2 + init_vel) / 2
+
+def init_vel_x(target_x):
+    """Compute the required initial x-velocity in order to hit the target x-position."""
+    return (np.sqrt(1 + 8 * target_x) - 1) / 2
+
+def hits_target(vel_x, vel_y):
+    t = 0
+    x, y = 0, 0
+    while x <= target_x[1] and y >= target_y[0]:
+        t += 1
+        x += vel_x
+        y += vel_y
+        vel_x = max(vel_x - 1, 0)
+        vel_y -= 1
+        #print(x, y)
+        if target_x[0] <= x <= target_x[1] and target_y[0] <= y <= target_y[1]:
+            return True
+    return False
+
+min_vel_y = target_y[0]
+max_vel_y = -target_y[0] - 1
+min_vel_x = int(init_vel_x(target_x[0]))
+max_vel_x = target_x[1]
+
+part2_ans = 0
+for vel_y in range(min_vel_y, max_vel_y + 1):
+    for vel_x in range(min_vel_x, max_vel_x + 1):
+        if hits_target(vel_x, vel_y):
+            part2_ans += 1
+
+print('Day 17, part 1:', int(pos_at_zero_vel(max_vel_y)))
+print('Day 17, part 2:', part2_ans)  # 4748
+
+## Day 18
+with open('day18_test.txt') as f:
+    numbers = [eval(line) for line in f]
+
+def explode(x):
+    return x
+
+def split(x):
+    return [np.floor(x / 2), np.ceil(x / 2)]
+
+def reduce(x, depth=0):
+    if depth == 3:
+        x = explode(x)
+    reduced = []
+    for y in x:
+        y = reduce(y, depth + 1)
+        if y >= 10:
+            y = reduce(split(y), depth)
+        reduced.append(y)
+    return reduced
+
+def add(a, b):
+    return reduce([a, b])
