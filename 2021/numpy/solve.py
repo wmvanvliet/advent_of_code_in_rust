@@ -693,7 +693,7 @@ def find_scanner_transform(a, b):
 
 transformed_scanners = {0: scanners[0]}
 transforms = dict()
-while len(transformed_scanners) < len(scanners)
+while len(transformed_scanners) < len(scanners):
     for i, scanner in enumerate(scanners):
         if i in transformed_scanners:
             continue
