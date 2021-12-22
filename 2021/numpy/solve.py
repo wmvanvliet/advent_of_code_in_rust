@@ -840,35 +840,117 @@ print('Day 21, part 2:', max(n_wins))
 
 
 ## Day 22
+def x_overlaps(r1, r2):
+    return (r1[0] >= r2[0] or r1[1] >= r2[0]) and (r1[0] <= r2[0] or r1[1] <= r2[1])
+
+def y_overlaps(r1, r2):
+    return (r1[2] >= r2[2] or r1[3] >= r2[2]) and (r1[2] <= r2[3] or r1[3] <= r2[3])
+
+def z_overlaps(r1, r2):
+    return (r1[4] >= r2[4] or r1[5] >= r2[4]) and (r1[4] <= r2[5] or r1[5] <= r2[5])
+
+def independent(r1, r2):
+    return not (x_overlaps(r1, r2) and y_overlaps(r1, r2) and z_overlaps(r1, r2))
+
+def encompasses(r1, r2):
+    return (r1[0] <= r2[0] and r1[1] >= r2[1] and
+            r1[2] <= r2[2] and r1[3] >= r2[3] and
+            r1[4] <= r2[4] and r1[5] >= r2[5])
+
+from itertools import combinations
+from pprint import pprint
+
+def remove_range(ranges, r):
+    step = 0
+    print('Step:', step)
+    #pprint(ranges)
+
+    while True:
+        step += 1
+        for i, r2 in enumerate(ranges):
+            if independent(r, r2):
+                continue
+            if encompasses(r, r2):
+                print('Removing range', i)
+                del ranges[i]
+                break
+        else:
+            print('Done!')
+            break
+    return ranges
+
+def normalize_ranges(ranges):
+    step = 0
+    print('Step:', step)
+    pprint(ranges)
+
+    while True:
+        step += 1
+        print('\nStep:', step)
+        for i_r1, i_r2 in combinations(range(len(ranges)), 2):
+            r1, r2 = ranges[i_r1], ranges[i_r2]
+            if independent(r1, r2):
+                continue
+            elif encompasses(r1, r2):
+                print('Merge', i_r2, 'into', i_r1)
+                del ranges[i_r2]
+                break
+            elif encompasses(r2, r1):
+                print('Merge', i_r1, 'into', i_r2)
+                del ranges[i_r1]
+                break
+            else:
+                print('Splitting', i_r1, 'and', i_r2)
+                del ranges[i_r1]
+                del ranges[i_r2 - 1]
+                xs = np.unique(r1[:2] + r2[:2])
+                ys = np.unique(r1[2:4] + r2[2:4])
+                zs = np.unique(r1[4:] + r2[4:])
+                print('xs', xs)
+                print('ys', ys)
+                print('zs', zs)
+                if len(xs) == 1:
+                    xs = [xs[0], xs[0]]
+                if len(ys) == 1:
+                    ys = [ys[0], ys[0]]
+                if len(zs) == 1:
+                    zs = [zs[0], zs[0]]
+                for x1, x2 in list(zip(xs[:-2], xs[1:-1])) + [(xs[-2], xs[-1] + 1)]:
+                    for y1, y2 in list(zip(ys[:-2], ys[1:-1])) + [(ys[-2], ys[-1] + 1)]:
+                        for z1, z2 in list(zip(zs[:-2], zs[1:-1])) + [(zs[-2], zs[-1] + 1)]:
+                            ranges.append([x1, x2 - 1, y1, y2 - 1, z1, z2 - 1])
+                break
+        else:
+            print('Done!')
+            break
+        pprint(ranges)
+    return ranges
+                
 import re
 day22_input_pat = re.compile(r'^(.+) x=(-?\d+)\.\.(-?\d+),y=(-?\d+)\.\.(-?\d+),z=(-?\d+)\.\.(-?\d+)$')
-
-class RangeSet:
-    def __init__(self):
-        self.ranges = []
-    
-    def add(self, r):
-        if len(self.ranges) == 0:
-            overlaps = False
-        else:
-            for r2 in self.ranges:
-                overlaps = (
-                    (r[0] >= r2[0] or r[1] >= r2[0]) and (r[0] <= r2[1] or r[1] <= r2[1]) #and
-                    (r[2] >= r2[2] or r[3] >= r2[0]) and (r[2] <= r2[3] or r[3] <= r2[3]) and
-                    (r[4] >= r2[4] or r[5] >= r2[0]) and (r[4] <= r2[5] or r[5] <= r2[5])
-                )
-                if overlaps:
-                    print('Overlaps')
-        if not overlaps:
-            self.ranges.append(r)
-        print(overlaps)
-        print(self.ranges)
-
-ranges = RangeSet()
+ranges = []
+cubes = np.zeros((101, 101, 101), 'bool')
 with open('day22_test.txt') as f:
-    for line in f:
+    for i, line in enumerate(f):
+        if i == 2:
+            break
         toggle, *r = day22_input_pat.match(line).groups()
-        print(toggle, r)
-        ranges.add(r)
+        r = [int(x) for x in r]
+        if not all([-50 <= x <= 50 for x in r]):
+            print('discarding', r)
+            continue
+        if toggle == 'on':
+            cubes[r[0] + 50:r[1] + 51, r[2] + 50:r[3] + 51, r[4] + 50:r[5] + 51] = True
+            ranges.append(r)
+            ranges = normalize_ranges(ranges)
+        elif toggle == 'off':
+            print('Stopping for now.')
+            break
+            #remove_range(ranges, r)
+            #ranges = normalize_ranges(ranges)
+            #cubes[r[0] + 50:r[1] + 51, r[2] + 50:r[3] + 51, r[4] + 50:r[5] + 51] = False
+print('Day 22, part 1:', cubes.sum())
 
-
+cubes2 = np.zeros((101, 101, 101), 'bool')
+for r in ranges:
+    cubes2[r[0] + 50:r[1] + 51, r[2] + 50:r[3] + 51, r[4] + 50:r[5] + 51] = True
