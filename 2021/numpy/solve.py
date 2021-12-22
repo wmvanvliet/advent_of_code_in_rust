@@ -11,11 +11,14 @@ import matplotlib.pyplot as plt
 import heapq
 import numba
 from sklearn.linear_model import LinearRegression
+from numpy.lib.stride_tricks import sliding_window_view
+
 
 ## Day 1
 depths = np.loadtxt('day1_input.txt')
 print('Day 1, Part 1:', np.sum(np.diff(depths) > 0))
 print('Day 1, Part 2:', np.sum(np.diff(depths[3:] - depths[:-3]) > 0))
+
 
 ## Day 2
 instructions = pd.read_csv('day2_input.txt', sep=' ', header=None, names=['instruction', 'amount'])
@@ -29,6 +32,7 @@ instructions = instructions.query('instruction == "forward"')
 forward = sum(instructions.amount)
 depth = sum(instructions.amount * instructions.aim)
 print('Day 2, Part 2:', int(forward * depth))
+
 
 ## Day 3
 readings = np.loadtxt('day3_input.txt', encoding='utf8', converters={0: list}, dtype='int')
@@ -58,6 +62,7 @@ for i in range(n_bits):
 
 print('Day 3, Part 2:', bits_to_int(oxygen.flat) * bits_to_int(co2.flat))
 
+
 ## Day 4
 bingo_numbers = np.loadtxt('day4_input.txt', delimiter=',', max_rows=1, dtype='int')
 charts = np.loadtxt('day4_input.txt', skiprows=2, dtype='int').reshape(-1, 5, 5)
@@ -78,6 +83,7 @@ for num in bingo_numbers:
     if len(charts) == 0:
         print('Day 4, Part 2:', winning_chart[winning_marks == 0].sum() * num)
         break
+
 
 ## Day 5
 def split_on_comma(x):
@@ -116,6 +122,7 @@ for day in range(1, 257):
     if day == 80:
         print('Day 6, part 1:', sum(ages))
 print('Day 6, part 2:', sum(ages))
+
 
 ## Day 7
 pos = np.loadtxt('day7_input.txt', delimiter=',')
@@ -314,6 +321,7 @@ for line in open('day10_input.txt'):
     
 print('Day 10, part1:', part1_ans)
 print('Day 10, part2:', int(np.median(part2_scores)))
+
 
 ## Day 11
 octopuses = np.loadtxt('day11_input.txt', encoding='utf8', converters={0: list}, dtype='int')
@@ -563,6 +571,51 @@ print('Day 16, part 1:', sum([packet.version for packet, _ in packets]))
 print('Day 16, part 2:', evaluate_next(parse_packets(bits))[0])
 
 
+## Day 17
+with open('day17_input.txt') as f:
+    x, y = f.readline().split(', ')
+    target_x = x.split('=')[1].split('..')
+    target_y = y.split('=')[1].split('..')
+target_x = int(target_x[0]), int(target_x[1])
+target_y = int(target_y[0]), int(target_y[1])
+
+def pos_at_zero_vel(init_vel):
+    """Compute the position at which the velocity reaches zero."""
+    return (init_vel ** 2 + init_vel) / 2
+
+def init_vel_x(target_x):
+    """Compute the required initial x-velocity in order to hit the target x-position."""
+    return (np.sqrt(1 + 8 * target_x) - 1) / 2
+
+def hits_target(vel_x, vel_y):
+    t = 0
+    x, y = 0, 0
+    while x <= target_x[1] and y >= target_y[0]:
+        t += 1
+        x += vel_x
+        y += vel_y
+        vel_x = max(vel_x - 1, 0)
+        vel_y -= 1
+        #print(x, y)
+        if target_x[0] <= x <= target_x[1] and target_y[0] <= y <= target_y[1]:
+            return True
+    return False
+
+min_vel_y = target_y[0]
+max_vel_y = -target_y[0] - 1
+min_vel_x = int(init_vel_x(target_x[0]))
+max_vel_x = target_x[1]
+
+part2_ans = 0
+for vel_y in range(min_vel_y, max_vel_y + 1):
+    for vel_x in range(min_vel_x, max_vel_x + 1):
+        if hits_target(vel_x, vel_y):
+            part2_ans += 1
+
+print('Day 17, part 1:', int(pos_at_zero_vel(max_vel_y)))
+print('Day 17, part 2:', part2_ans)  # 4748
+
+
 ## Day 18
 def tokenize(s):
     tokens = list()
@@ -711,3 +764,111 @@ scanner_positions = np.vstack((scanner_positions, [[0, 0, 0]]))
 
 print('Day 19, part 1:', len(all_beacons))
 print('Day 19, part 2:', int(distance.pdist(scanner_positions, metric='cityblock').max()))
+
+
+## Day 20
+with open('day20_input.txt') as f:
+    algorithm, _, *img = f.readlines()
+    algorithm = np.array([int(ch == '#') for ch in algorithm.strip()])
+    img = np.array([[int(ch == '#') for ch in row.strip()] for row in img])
+
+bin2dec = (2**np.arange(9)).reshape(3, 3)
+
+def enhance(img, n):
+    img = np.pad(img, 2 * n)
+    for _ in range(n):
+        img = algorithm[convolve2d(img, bin2dec, mode='valid')]
+    return img
+
+print('Day 20, part 1:', enhance(img, 2).sum())
+print('Day 20, part 2:', enhance(img, 50).sum())
+
+
+## Day 21
+with open('day21_input.txt') as f:
+    player1_pos = int(f.readline().split(': ')[1])
+    player2_pos = int(f.readline().split(': ')[1])
+pos = [player1_pos, player2_pos]
+score = [0, 0]
+
+def die_gen():
+    while True:
+        for i in range(1, 101):
+            yield i
+
+die = die_gen()
+
+n_rolls = 0
+turn = 0
+while score[0] < 1000 and score[1] < 1000:
+    pos[turn] = ((pos[turn] - 1 + next(die) + next(die) + next(die)) % 10) + 1
+    score[turn] += pos[turn]
+    turn = int(not turn)
+    n_rolls += 3
+
+print('Day 21, part 1:', min(score) * n_rolls)
+
+unfinished_games = {
+    # pos1, score1, pos2, score2 -> copies of this game
+    ((pos[0] - 1, pos[1] - 1), (0, 0)): 1,
+}
+n_wins = [0, 0]
+turn = 0
+
+while len(unfinished_games) > 0:
+    still_unfinished = dict()
+    for (pos, score), n in unfinished_games.items():
+        for die1 in [1, 2, 3]:
+            for die2 in [1, 2, 3]:
+                for die3 in [1, 2, 3]:
+                    new_pos = (pos[turn] + die1 + die2 + die3) % 10
+                    new_score = score[turn] + new_pos + 1
+                    if new_score >= 21:
+                        # Game finished
+                        n_wins[turn] += n
+                        continue # No longer track these games
+                    else:
+                        # Game remains unfinished.
+                        if turn == 0:
+                            new_state = ((new_pos, pos[1]), (new_score, score[1]))
+                        else:
+                            new_state = ((pos[0], new_pos), (score[0], new_score))
+                        still_unfinished[new_state] = still_unfinished.get(new_state, 0) + n
+    unfinished_games = still_unfinished
+    turn = int(not turn)
+print('Day 21, part 2:', max(n_wins))
+
+
+## Day 22
+import re
+day22_input_pat = re.compile(r'^(.+) x=(-?\d+)\.\.(-?\d+),y=(-?\d+)\.\.(-?\d+),z=(-?\d+)\.\.(-?\d+)$')
+
+class RangeSet:
+    def __init__(self):
+        self.ranges = []
+    
+    def add(self, r):
+        if len(self.ranges) == 0:
+            overlaps = False
+        else:
+            for r2 in self.ranges:
+                overlaps = (
+                    (r[0] >= r2[0] or r[1] >= r2[0]) and (r[0] <= r2[1] or r[1] <= r2[1]) #and
+                    (r[2] >= r2[2] or r[3] >= r2[0]) and (r[2] <= r2[3] or r[3] <= r2[3]) and
+                    (r[4] >= r2[4] or r[5] >= r2[0]) and (r[4] <= r2[5] or r[5] <= r2[5])
+                )
+                if overlaps:
+                    print('Overlaps')
+        if not overlaps:
+            self.ranges.append(r)
+        print(overlaps)
+        print(self.ranges)
+
+ranges = RangeSet()
+with open('day22_test.txt') as f:
+    for line in f:
+        toggle, *r = day22_input_pat.match(line).groups()
+        print(toggle, r)
+        ranges.add(r)
+
+
