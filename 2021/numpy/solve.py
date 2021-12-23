@@ -12,6 +12,7 @@ import heapq
 import numba
 from sklearn.linear_model import LinearRegression
 from numpy.lib.stride_tricks import sliding_window_view
+import re
 
 
 ## Day 1
@@ -840,117 +841,139 @@ print('Day 21, part 2:', max(n_wins))
 
 
 ## Day 22
-def x_overlaps(r1, r2):
-    return (r1[0] >= r2[0] or r1[1] >= r2[0]) and (r1[0] <= r2[0] or r1[1] <= r2[1])
+#def x_overlaps(r1, r2):
+#    return (r1[0] >= r2[0] or r1[1] > r2[0]) and (r1[0] <= r2[0] or r1[1] <= r2[1])
 
-def y_overlaps(r1, r2):
-    return (r1[2] >= r2[2] or r1[3] >= r2[2]) and (r1[2] <= r2[3] or r1[3] <= r2[3])
+#def y_overlaps(r1, r2):
+#    return (r1[2] >= r2[2] or r1[3] > r2[2]) and (r1[2] <= r2[3] or r1[3] <= r2[3])
 
-def z_overlaps(r1, r2):
-    return (r1[4] >= r2[4] or r1[5] >= r2[4]) and (r1[4] <= r2[5] or r1[5] <= r2[5])
+#def z_overlaps(r1, r2):
+#    return (r1[4] >= r2[4] or r1[5] > r2[4]) and (r1[4] <= r2[5] or r1[5] <= r2[5])
 
-def independent(r1, r2):
-    return not (x_overlaps(r1, r2) and y_overlaps(r1, r2) and z_overlaps(r1, r2))
+#def independent(r1, r2):
+#    return not (x_overlaps(r1, r2) and y_overlaps(r1, r2) and z_overlaps(r1, r2))
 
-def encompasses(r1, r2):
-    return (r1[0] <= r2[0] and r1[1] >= r2[1] and
-            r1[2] <= r2[2] and r1[3] >= r2[3] and
-            r1[4] <= r2[4] and r1[5] >= r2[5])
+#def encompasses(r1, r2):
+#    return (r1[0] <= r2[0] and r1[1] >= r2[1] and
+#            r1[2] <= r2[2] and r1[3] >= r2[3] and
+#            r1[4] <= r2[4] and r1[5] >= r2[5])
 
-from itertools import combinations
-from pprint import pprint
+#from itertools import combinations
+#from pprint import pprint
 
-def remove_range(ranges, r):
-    step = 0
-    print('Step:', step)
-    #pprint(ranges)
+#def remove_range(ranges, r):
+#    step = 0
+#    print('Step:', step)
+#    #pprint(ranges)
 
-    while True:
-        step += 1
-        for i, r2 in enumerate(ranges):
-            if independent(r, r2):
-                continue
-            if encompasses(r, r2):
-                print('Removing range', i)
-                del ranges[i]
-                break
-        else:
-            print('Done!')
-            break
-    return ranges
+#    while True:
+#        step += 1
+#        for i, r2 in enumerate(ranges):
+#            if independent(r, r2):
+#                continue
+#            if encompasses(r, r2):
+#                print('Removing range', i)
+#                del ranges[i]
+#                break
+#        else:
+#            print('Done!')
+#            break
+#    return ranges
 
-def normalize_ranges(ranges):
-    step = 0
-    print('Step:', step)
-    pprint(ranges)
+#def normalize_ranges(ranges):
+#    print('normalizing', len(ranges), 'ranges')
+#    step = 0
+#    while True:
+#        step += 1
+#        for i_r1, i_r2 in combinations(range(len(ranges)), 2):
+#            r1, r2 = ranges[i_r1], ranges[i_r2]
+#            if independent(r1, r2):
+#                continue
+#            elif encompasses(r1, r2):
+#                del ranges[i_r2]
+#                break
+#            elif encompasses(r2, r1):
+#                del ranges[i_r1]
+#                break
+#        else:
+#            break
+#    print(len(ranges), 'left')
+#    return ranges
 
-    while True:
-        step += 1
-        print('\nStep:', step)
-        for i_r1, i_r2 in combinations(range(len(ranges)), 2):
-            r1, r2 = ranges[i_r1], ranges[i_r2]
-            if independent(r1, r2):
-                continue
-            elif encompasses(r1, r2):
-                print('Merge', i_r2, 'into', i_r1)
-                del ranges[i_r2]
-                break
-            elif encompasses(r2, r1):
-                print('Merge', i_r1, 'into', i_r2)
-                del ranges[i_r1]
-                break
-            else:
-                print('Splitting', i_r1, 'and', i_r2)
-                del ranges[i_r1]
-                del ranges[i_r2 - 1]
-                xs = np.unique(r1[:2] + r2[:2])
-                ys = np.unique(r1[2:4] + r2[2:4])
-                zs = np.unique(r1[4:] + r2[4:])
-                print('xs', xs)
-                print('ys', ys)
-                print('zs', zs)
-                if len(xs) == 1:
-                    xs = [xs[0], xs[0]]
-                if len(ys) == 1:
-                    ys = [ys[0], ys[0]]
-                if len(zs) == 1:
-                    zs = [zs[0], zs[0]]
-                for x1, x2 in list(zip(xs[:-2], xs[1:-1])) + [(xs[-2], xs[-1] + 1)]:
-                    for y1, y2 in list(zip(ys[:-2], ys[1:-1])) + [(ys[-2], ys[-1] + 1)]:
-                        for z1, z2 in list(zip(zs[:-2], zs[1:-1])) + [(zs[-2], zs[-1] + 1)]:
-                            ranges.append([x1, x2 - 1, y1, y2 - 1, z1, z2 - 1])
-                break
-        else:
-            print('Done!')
-            break
-        pprint(ranges)
-    return ranges
+#def add_range(ranges, r1, remove=False):
+#    new_ranges = []
+#    added = False
+#    for r2 in ranges:
+#        if encompasses(r2, r1):
+#            return ranges
+#        elif independent(r1, r2):
+#            new_ranges.append(r2)
+#        else:
+#            #print('Splitting', r1, 'and', r2)
+#            xs = np.unique(np.hstack((r1[:2], r2[:2])))
+#            ys = np.unique(np.hstack((r1[2:4], r2[2:4])))
+#            zs = np.unique(np.hstack((r1[4:], r2[4:])))
+#            #print('xs', xs)
+#            #print('ys', ys)
+#            #print('zs', zs)
+#            for x1, x2 in zip(xs[:-1], xs[1:]):
+#                for y1, y2 in zip(ys[:-1], ys[1:]):
+#                    for z1, z2 in zip(zs[:-1], zs[1:]):
+#                        new_range = [x1, x2, y1, y2, z1, z2]
+#                        if (not remove) or (not encompasses(r1, new_range)):
+#                            new_ranges.append(new_range)
+#            added = True
+#            new_ranges = normalize_ranges(new_ranges)
+#    if not added:
+#        new_ranges.append(r1)
+#    pprint(new_ranges)
+#    return new_ranges
                 
-import re
+#import re
+#day22_input_pat = re.compile(r'^(.+) x=(-?\d+)\.\.(-?\d+),y=(-?\d+)\.\.(-?\d+),z=(-?\d+)\.\.(-?\d+)$')
+#ranges = []
+#cubes = np.zeros((101, 101, 101), 'bool')
+#with open('day22_test.txt') as f:
+#    for i, line in enumerate(f):
+#        toggle, *r = day22_input_pat.match(line).groups()
+#        r[1::2] += 1
+#        if not all([-50 <= x <= 51 for x in r]):
+#            print('discarding', r)
+#            continue
+#        r_ = r + 50
+#        cubes[r_[0]:r_[1], r_[2]:r_[3], r_[4]:r_[5]] = (toggle == 'off')
+#        ranges = add_range(ranges, r, remove=toggle == 'off')
+#print('Day 22, part 1:', cubes.sum())
+
+#cubes2 = np.zeros((101, 101, 101), 'bool')
+#for r in ranges:
+#    r_ = np.array(r) + 50
+#    cubes2[r_[0]:r_[1], r_[2]:r_[3], r_[4]:r_[5]] = True
+
+## Day 22
 day22_input_pat = re.compile(r'^(.+) x=(-?\d+)\.\.(-?\d+),y=(-?\d+)\.\.(-?\d+),z=(-?\d+)\.\.(-?\d+)$')
-ranges = []
-cubes = np.zeros((101, 101, 101), 'bool')
+cubes = []
+cube_toggle = []
 with open('day22_test.txt') as f:
     for i, line in enumerate(f):
-        if i == 2:
-            break
-        toggle, *r = day22_input_pat.match(line).groups()
-        r = [int(x) for x in r]
-        if not all([-50 <= x <= 50 for x in r]):
-            print('discarding', r)
-            continue
-        if toggle == 'on':
-            cubes[r[0] + 50:r[1] + 51, r[2] + 50:r[3] + 51, r[4] + 50:r[5] + 51] = True
-            ranges.append(r)
-            ranges = normalize_ranges(ranges)
-        elif toggle == 'off':
-            print('Stopping for now.')
-            break
-            #remove_range(ranges, r)
-            #ranges = normalize_ranges(ranges)
-            #cubes[r[0] + 50:r[1] + 51, r[2] + 50:r[3] + 51, r[4] + 50:r[5] + 51] = False
-print('Day 22, part 1:', cubes.sum())
+        toggle, *cube = day22_input_pat.match(line).groups()
+        cube = [int(x) for x in cube]
+        if all([-50 <= x <= 51 for x in cube]):
+            cubes.append(cube)
+            cube_toggle.append(toggle == 'on')
+cubes = np.array(cubes).reshape(-1, 3, 2)
+cubes[:, :, 1] += 1  # Make ranges end-exclusive
+x_ticks = np.unique(cubes[:, 0, :].ravel())
+y_ticks = np.unique(cubes[:, 1, :].ravel())
+z_ticks = np.unique(cubes[:, 2, :].ravel())
+enabled = np.zeros((len(x_ticks), len(y_ticks), len(z_ticks)), 'bool')
+for (x, y, z), toggle in zip(cubes, cube_toggle):
+    x = np.searchsorted(x_ticks, x)
+    y = np.searchsorted(y_ticks, y)
+    z = np.searchsorted(z_ticks, z)
+    enabled[x[0]:x[1], y[0]:y[1], z[0]:z[1]] = toggle
+widths = np.diff(x_ticks)
+depths = np.diff(y_ticks)
+heights = np.diff(z_ticks)
 
-cubes2 = np.zeros((101, 101, 101), 'bool')
-for r in ranges:
-    cubes2[r[0] + 50:r[1] + 51, r[2] + 50:r[3] + 51, r[4] + 50:r[5] + 51] = True
+cubes_enabled = np.array(np.where(enabled)).T
