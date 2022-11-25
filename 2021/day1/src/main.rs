@@ -44,7 +44,9 @@ fn part1(input: &str) -> i64 {
 }
 
 /**
- * Solves part 2 of the puzzle.
+ * Solves part 2 of the puzzle. The key here is to realize we don't actually need a sliding window.
+ * We can just compare the current value against the value 3 iterations ago. Easiest way to do this
+ * is to store all the numbers in a Vec and use integer indexes.
  */
 fn part2(input: &str) -> i64 {
     let numbers:Vec<i64> = input.lines()
@@ -52,7 +54,6 @@ fn part2(input: &str) -> i64 {
         .collect();
 
     let mut answer:i64 = 0;
-
     for i in 3..numbers.len() {
         if numbers[i] > numbers[i - 3] {
             answer += 1;
