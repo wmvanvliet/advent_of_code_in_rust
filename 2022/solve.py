@@ -1089,3 +1089,254 @@ del operations['humn']
 find_the_human()
 
 print('Day 22, part 2:', human_needs_to_yell())
+
+
+## Day 23
+import numpy as np
+import re
+
+# Test
+def wrap_test_part1(y, x, facing):
+    if facing == 0:
+        if y in range(1, 5):
+            return y, 9, facing
+        if y in range(5, 9):
+            return y, 1, facing
+        if y in range(9, 16):
+            return y, 9, facing
+    elif facing == 1:
+        if x in range(1, 9):
+            return 5, x, facing
+        elif x in range(9, 13):
+            return 1, x, facing
+        elif x in range(13, 17):
+            return 9, x, facing
+    elif facing == 2:
+        if y in range(1, 5):
+            return y, 12, facing
+        if y in range(5, 9):
+            return y, 12, facing
+        if y in range(9, 16):
+            return y, 16, facing
+    elif facing == 3:
+        if x in range(1, 9):
+            return 8, x, facing
+        elif x in range(9, 13):
+            return 12, x, facing
+        elif x in range(13, 17):
+            return 12, x, facing
+
+def wrap_test_part2(y, x, facing):
+    if facing == 0:
+        if y in range(1, 5):
+            return 12 - (y - 1), 16, 2
+        if y in range(5, 9):
+            return 9, 16 - (y - 5), 1
+        if y in range(9, 16):
+            return 4 - (y - 9), 12, 2
+    elif facing == 1:
+        if x in range(1, 5):
+            return 11, 8 - (x - 1), 3
+        elif x in range(5, 9):
+            return 12 - (x - 5), 9, 0
+        elif x in range(9, 13):
+            return 8, 4 - (x - 9), 3
+        elif x in range(13, 17):
+            return 8 - (x - 13), 1, 0
+    elif facing == 2:
+        if y in range(1, 5):
+            return 5, 5 + (y - 1), 1
+        if y in range(5, 9):
+            return 12, 16 - (y - 5), 3
+        if y in range(9, 16):
+            return 8, 8 - (y - 9), 3
+    elif facing == 3:
+        if x in range(1, 5):
+            return 1, 12 - (x - 1), 1
+        elif x in range(5, 9):
+            return 1 + (x - 5), 9, 0
+        elif x in range(9, 13):
+            return 5, 4 - (x - 9), 1
+        elif x in range(13, 17):
+            return 8 - (x - 13), 12, 2
+
+# Real
+def wrap_real_part1(y, x, facing):
+    if facing == 0:
+        if y in range(1, 51):
+            return y, 51, facing
+        elif y in range(51, 101):
+            return y, 51, facing
+        elif y in range(101, 151):
+            return y, 1, facing
+        elif y in range(151, 201):
+            return y, 1, facing
+    elif facing == 1:
+        if x in range(1, 51):
+            return 101, x, facing
+        elif x in range(51, 101):
+            return 1, x, facing
+        elif x in range(101, 151):
+            return 1, x, facing
+    elif facing == 2:
+        if y in range(1, 51):
+            return y, 150, facing
+        elif y in range(51, 101):
+            return y, 100, facing
+        elif y in range(101, 151):
+            return y, 100, facing
+        elif y in range(151, 201):
+            return y, 50, facing
+    elif facing == 3:
+        if x in range(1, 51):
+            return 200, x, facing
+        elif x in range(51, 101):
+            return 150, x, facing
+        elif x in range(101, 151):
+            return 50, x, facing
+
+def wrap_real_part2(y, x, facing):
+    if facing == 0:
+        if y in range(1, 51):
+            return 150 - (y - 1), 100, 2
+        elif y in range(51, 101):
+            return 50, 101 + (y - 51), 3
+        elif y in range(101, 151):
+            return 50 - (y - 101), 150, 2
+        elif y in range(151, 201):
+            return 150, 51 + (y - 151), 3
+    elif facing == 1:
+        if x in range(1, 51):
+            return 1, 101 + (x - 1), 1
+        elif x in range(51, 101):
+            return 151 + (x - 51), 50, 2
+        elif x in range(101, 151):
+            return 51 + (x - 101), 100, 2
+    elif facing == 2:
+        if y in range(1, 51):
+            return 150 - (y - 1), 1, 0
+        elif y in range(51, 101):
+            return 101, 1 + (y - 51), 1
+        elif y in range(101, 151):
+            return 50 - (y - 101), 51, 0
+        elif y in range(151, 201):
+            return 1, 51 + (y - 151), 1
+    elif facing == 3:
+        if x in range(1, 51):
+            return 51 + (x - 1), 51, 0
+        elif x in range(51, 101):
+            return 151 + (x - 51), 1, 0
+        elif x in range(101, 151):
+            return 200, 1 + (x - 101), 3
+
+def print_board(board):
+    for row in board:
+        for val in row:
+            if val == 0:
+                print(' ', end='')
+            elif val == 1:
+                print('.', end='')
+            elif val == 2:
+                print('#', end='')
+            elif val == 3:
+                print('>', end='')
+            elif val == 4:
+                print('v', end='')
+            elif val == 5:
+                print('<', end='')
+            elif val == 6:
+                print('^', end='')
+            else:
+                raise ValueError(f'Invalid value: {val}')
+        print()
+
+to_num = {' ': 0, '.': 1, '#': 2}
+facing_d = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+rows = []
+wrap = wrap_real_part2
+with open('input_day22.txt') as f:
+    for line in f:
+        if line.strip() == '':
+            break
+        rows.append([to_num[x] for x in list(line.rstrip())])
+    route = re.findall(r'\d+|[LR]', next(f).strip())
+
+def walk_route(route, wrap):
+    '''Walk the given route along the board, using the given wrapping function
+    for when we fall off edges.'''
+    # Build the board as a numpy array
+    board_height = len(rows)
+    board_width = max([len(row) for row in rows])
+    board = np.zeros((board_height + 2, board_width + 2), dtype='int')
+    for y, row in enumerate(rows, 1):
+        board[y, 1:len(row)+1] = row
+
+    # Starting position
+    y = 1
+    x = np.flatnonzero(board[y])[0]
+    facing = 0
+
+    # Start walking
+    for instruction in route:
+        if instruction == 'L':
+            facing = (facing - 1) % 4
+        elif instruction == 'R':
+            facing = (facing + 1) % 4
+        else:
+            num = int(instruction)
+            for _ in range(num):
+                board[y, x] = 3 + facing
+                dy, dx = facing_d[facing]
+                new_y = y + dy
+                new_x = x + dx
+                new_facing = facing
+                if board[new_y, new_x] == 0:
+                    new_y, new_x, new_facing = wrap(y, x, facing)
+                if board[new_y, new_x] == 2:
+                    break
+                y = new_y
+                x = new_x
+                facing = new_facing
+            board[y, x] = 3 + facing
+    return y * 1000 + 4 * x +  facing
+
+print('Day 22, part 1:', walk_route(route, wrap_real_part1))
+print('Day 22, part 2:', walk_route(route, wrap_real_part2))
+
+## Day 23
+from collections import deque, defaultdict
+
+dirs = [0-1j, 1-1j, 1+0j, 1+1j, 0+1j, -1+1j, -1+0j, -1-1j]
+
+loc = set(complex(x, y)
+          for y, line in enumerate(open('input_day23.txt'))
+          for x, ch in enumerate(line) if ch == '#')
+n_elves = len(loc)
+
+to_check = deque((dirs[i], (dirs[i - 1], dirs[i], dirs[i + 1]))
+                 for i in [0, 4, 6, 2])
+
+for round in range(1, 1_000):
+    proposals = defaultdict(list)
+    for j, l in enumerate(loc):
+        possibilities = [l + d for d, check in to_check
+                         if not any(l + c in loc for c in check)]
+        if len(possibilities) in [0, 4]:
+            proposal = l
+        else:
+            proposal = possibilities[0]
+        proposals[proposal] += [l]
+
+    new_loc = set(sum(([k] if len(v) == 1 else v
+                      for k, v in proposals.items()), []))
+    assert len(new_loc) == n_elves
+    if len(new_loc - loc) == 0:
+        print('Day 23, part 2:', round)
+        break
+
+    loc = new_loc
+    to_check.rotate(-1)
+
+    if round == 10:
+        n_empty = np.prod(np.ptp([[l.real, l.imag] for l in loc], axis=0)) - len(loc)
+        print('Day 23, part 1:', int(n_empty))
