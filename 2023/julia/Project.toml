@@ -1,0 +1,5 @@
+name = "Advent of Code 2023"
+authors = ["Marijn van Vliet <w.m.vanvliet@gmail.com"]
+
+[compat]
+julia = "1.9"

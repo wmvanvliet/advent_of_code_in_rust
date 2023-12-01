@@ -3,3 +3,4 @@
 *.swp
 Cargo.lock
 target
+__pycache__

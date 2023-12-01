@@ -1340,3 +1340,148 @@ for round in range(1, 1_000):
     if round == 10:
         n_empty = np.prod(np.ptp([[l.real, l.imag] for l in loc], axis=0)) - len(loc)
         print('Day 23, part 1:', int(n_empty))
+
+
+## Day 24
+from tqdm import tqdm
+directions = {'>': (1, 0), '<': (-1, 0), 'v': (0, 1), '^': (0, -1)}
+blizzards = list()
+with open('input_day24.txt') as f:
+    start_y = -1
+    start_x = next(f).index('.') - 1
+    for y, line in enumerate(f):
+        for x, c in enumerate(line.strip()[1:-1]):
+            if c not in '#.':
+                blizzards.append(((x, y), c))
+    end_y = y
+    end_x = line.index('.') - 1
+    field_width = len(line.strip()) - 2
+    field_height = end_y
+blizzards_locs = [{b[0] for b in blizzards}]
+
+def gen_blizzards_locs():
+    global blizzards
+    while True:
+        new_blizzards = list()
+        for loc, d in blizzards:
+            loc = ((loc[0] + directions[d][0]) % field_width,
+                   (loc[1] + directions[d][1]) % field_height)
+            new_blizzards.append((loc, d))
+        blizzards = new_blizzards
+        yield {b[0] for b in blizzards}
+
+blizzards_loc = gen_blizzards_locs()
+blizzards_locs.append(next(blizzards_loc))
+
+def find_route(start_x, start_y, end_x, end_y, start_time=0):
+    states = [((start_x, start_y), start_time, start_time + abs(end_x - start_x) + abs(end_y - start_y))]
+    # print(1, blizzards_locs[1])
+    # print(1, states)
+    # print()
+    for i in tqdm(range(500_000)):
+        (x, y), time, score = states.pop()
+        # print(f'evaluating {x=} {y=} {time=} {score=}')
+        time += 1
+        while len(blizzards_locs) <= time:
+            blizzards_locs.append(next(blizzards_loc))
+        bl = blizzards_locs[time]
+        # print(time, bl)
+        for d in list(directions.values()) + [(0, 0)]:
+            new_x, new_y = x + d[0], y + d[1]
+            if new_x == end_x and new_y == end_y:
+                return time
+            if ((0 <= new_x < field_width) and (0 <= new_y < field_height) and (new_x, new_y) not in bl) or (new_x == start_x and new_y == start_y) or (new_x == end_x and new_y == end_y):
+                states.append(((new_x, new_y), time, time + (end_x - new_x) + (end_y - new_y)))
+        states = sorted(list(set(states)), key=lambda s: s[2])[::-1]
+        #print(states)
+        #print()
+    raise RuntimeError('Out of time.')
+
+time = find_route(start_x, start_y, end_x, end_y, 0)
+print('Day 24, part 1:', time)
+time = find_route(end_x, end_y, start_x, start_y, time)
+print(time)
+time = find_route(start_x, start_y, end_x, end_y, time)
+print('Day 24, part 2:', time)
+
+##
+from tqdm import tqdm
+dirs = {'>': 1, '<': -1, 'v': 1j, '^': -1j}
+with open('input_day24_test.txt') as f:
+    field_width = len(next(f)) - 3
+    blizzards = [(x, y, dirs[c])
+                 for y, l in enumerate(f)
+                 for x, c in enumerate(l[1:-2])
+                 if c not in '.#']
+    field_height = y - 2
+    print(y)
+blizzards_locs = [{b[0] for b in blizzards}]
+
+def gen_blizzards_locs():
+    global blizzards
+    while True:
+        new_blizzards = list()
+        for loc, d in blizzards:
+            loc = ((loc[0] + directions[d][0]) % field_width,
+                   (loc[1] + directions[d][1]) % field_height)
+            new_blizzards.append((loc, d))
+        blizzards = new_blizzards
+        yield {b[0] for b in blizzards}
+
+blizzards_loc = gen_blizzards_locs()
+blizzards_locs.append(next(blizzards_loc))
+
+def find_route(start_x, start_y, end_x, end_y, start_time=0):
+    states = [((start_x, start_y), start_time, start_time + abs(end_x - start_x) + abs(end_y - start_y))]
+    # print(1, blizzards_locs[1])
+    # print(1, states)
+    # print()
+    for i in tqdm(range(500_000)):
+        (x, y), time, score = states.pop()
+        # print(f'evaluating {x=} {y=} {time=} {score=}')
+        time += 1
+        while len(blizzards_locs) <= time:
+            blizzards_locs.append(next(blizzards_loc))
+        bl = blizzards_locs[time]
+        # print(time, bl)
+        for d in list(directions.values()) + [(0, 0)]:
+            new_x, new_y = x + d[0], y + d[1]
+            if new_x == end_x and new_y == end_y:
+                return time
+            if ((0 <= new_x < field_width) and (0 <= new_y < field_height) and (new_x, new_y) not in bl) or (new_x == start_x and new_y == start_y) or (new_x == end_x and new_y == end_y):
+                states.append(((new_x, new_y), time, time + (end_x - new_x) + (end_y - new_y)))
+        states = sorted(list(set(states)), key=lambda s: s[2])[::-1]
+        #print(states)
+        #print()
+    raise RuntimeError('Out of time.')
+
+time = find_route(start_x, start_y, end_x, end_y, 0)
+print('Day 24, part 1:', time)
+time = find_route(end_x, end_y, start_x, start_y, time)
+print(time)
+time = find_route(start_x, start_y, end_x, end_y, time)
+print('Day 24, part 2:', time)
+
+
+## Day 25
+def snafu_to_dec(snafu):
+    trans = {'0': 0, '1': 1, '2': 2, '-': -1, '=': -2}
+    return sum((5 ** pos) * trans[digit]
+               for pos, digit in enumerate(snafu[::-1]))
+
+def dec_to_snafu(dec):
+    trans = [('0', 0), ('1', 0), ('2', 0), ('-', 1), ('=', 1)]
+    snafu = ''
+    while dec > 0:
+        next_digit, carry = trans[dec % 5]
+        snafu = next_digit + snafu
+        dec = dec // 5 + carry
+    return snafu
+
+day1 = 0
+with open('input_day25.txt') as f:
+    for line in f:
+        print(line.strip(), snafu_to_dec(line.strip()), dec_to_snafu(snafu_to_dec(line.strip())))
+        day1 += snafu_to_dec(line.strip())
+print('Day 25, part 1:', dec_to_snafu(day1))
+
