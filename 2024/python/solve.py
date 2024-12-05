@@ -1,4 +1,5 @@
 import re
+from functools import cmp_to_key
 
 import numpy as np
 
@@ -94,3 +95,17 @@ for y in range(1, n_lines - 1):
         if (mas1 == "MAS" or mas1 == "SAM") and (mas2 == "MAS" or mas2 == "SAM"):
             n_xmas += 1
 print("Day 4, part 2:", n_xmas)
+
+str_rules, str_updates = open("day5.txt").read().strip().split("\n\n")
+rules = dict()
+for rule in str_rules.split("\n"):
+    x, y = rule.split("|")
+    rules[(x, y)] = -1
+    rules[(y, x)] = 1
+updates = [u.split(",") for u in str_updates.split("\n")]
+key_func = cmp_to_key(lambda x, y: rules.get((x, y), 0))
+updates_sorted = [sorted(u, key=key_func) for u in updates]
+part1 = sum(int(u[len(u) // 2]) for u, us in zip(updates, updates_sorted) if u == us)
+part2 = sum(int(us[len(us) // 2]) for u, us in zip(updates, updates_sorted) if u != us)
+print("Day 5, part 1:", part1)
+print("Day 5, part 2:", part2)
