@@ -276,3 +276,73 @@ part1 = sum(answer for answer, terms in equations if is_solvable(answer, terms, 
 part2 = sum(answer for answer, terms in equations if is_solvable(answer, terms, True))
 print("Day 7, part 1:", part1)
 print("Day 7, part 2:", part2)
+
+
+antennae = dict()
+with open("day8.txt") as f:
+    for y, line in enumerate(f):
+        for x, freq in enumerate(line.strip()):
+            if freq != ".":
+                freq_antennae = antennae.get(freq, set())
+                freq_antennae.add((y, x))
+                antennae[freq] = freq_antennae
+height = y + 1
+width = len(line.strip())
+print(height, width)
+
+antinodes = set()
+for freq in antennae.keys():
+    for a1 in antennae[freq]:
+        for a2 in antennae[freq]:
+            if a1 == a2:
+                continue
+            dy = a1[0] - a2[0]
+            dx = a1[1] - a2[1]
+            antinode = (a1[0], a1[1])
+            while 0 <= antinode[0] < height and 0 <= antinode[1] < width:
+                antinodes.add(antinode)
+                antinode = (antinode[0] + dy, antinode[1] + dx)
+
+print("Day 8, part 1:", len(antinodes))
+
+##
+import numpy as np
+
+disk_map = np.fromregex("day9_test.txt", r"(\d)", dtype=[("num", "int")])[
+    "num"
+].tolist()
+print(disk_map)
+
+files, empty = disk_map[::2], disk_map[1::2]
+files = [(i, size) for i, size in enumerate(files)]
+print(files)
+print(empty)
+
+print()
+insert_point = 1
+space = empty.pop(0)
+to_place_id, to_place_size = files.pop(-1)
+while insert_point < len(files):
+    # print(files)
+    # print(insert_point)
+    to_take = min(space, to_place_size)
+    files.insert(insert_point, (to_place_id, to_take))
+    if to_place_size > 0:
+        insert_point += 1
+    to_place_size -= to_take
+    if to_place_size == 0:
+        to_place_id, to_place_size = files.pop(-1)
+    space -= to_take
+    if space == 0:
+        space = empty.pop(0)
+        insert_point += 1
+files.append((to_place_id, to_place_size))
+
+offsets = [0] + np.cumsum([file[1] for file in files[:-1]]).tolist()
+print(files)
+print(offsets)
+
+checksum = 0
+for (file_id, file_size), offset in zip(files, offsets):
+    checksum += file_id * (sum(range(file_size)) + file_size * offset)
+print(checksum)
