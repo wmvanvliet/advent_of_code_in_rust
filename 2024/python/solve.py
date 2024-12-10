@@ -1,8 +1,8 @@
 import re
 from functools import cmp_to_key
-from tqdm import tqdm
 
 import numpy as np
+from tqdm import tqdm
 
 
 def is_safe(levels):
@@ -288,7 +288,6 @@ with open("day8.txt") as f:
                 antennae[freq] = freq_antennae
 height = y + 1
 width = len(line.strip())
-print(height, width)
 
 antinodes = set()
 for freq in antennae.keys():
@@ -336,163 +335,255 @@ offsets = [0] + np.cumsum([chunk_size for _, chunk_size in chunks[:-1]]).tolist(
 checksum = 0
 for (chunk_id, chunk_size), offset in zip(chunks, offsets):
     checksum += chunk_id * (sum(range(chunk_size)) + chunk_size * offset)
-print(checksum)
+print("Day 9, part 1:", checksum)
+
+# ##
+# from collections import defaultdict
+# from dataclasses import dataclass
+# from typing import Optional
+#
+# import numpy as np
+#
+#
+# @dataclass
+# class Chunk:
+#     size: int
+#     pos: int = -1
+#     prev: Optional["Empty"] = None
+#     next: Optional["Empty"] = None
+#
+#     def insert_after(self, chunk):
+#         chunk.next = self.next
+#         chunk.prev = self
+#         chunk.pos = self.pos + 1
+#         if self.next:
+#             self.next.prev = chunk
+#             self.next.pos = chunk.pos + 1
+#         self.next = chunk
+#         return chunk
+#
+#     def detach(self):
+#         e = Empty(size=self.size, pos=0)
+#         if self.prev:
+#             self.prev.next = e
+#             e.prev = self.prev
+#             e.pos = self.prev.pos + 1
+#         if self.next:
+#             self.next.prev = e
+#             e.next = self.next
+#         self.prev = None
+#         self.next = None
+#         self.pos = -1
+#         return self
+#
+#     def remove(self):
+#         if self.prev:
+#             self.prev.next = self.next
+#         if self.next:
+#             self.next.prev = self.prev
+#
+#     def print_chain(self):
+#         n = self
+#         while n is not None:
+#             print(f"{n} ", end="")
+#             n = n.next
+#         print()
+#
+#     def __iter__(self):
+#         n = self
+#         while n:
+#             yield n
+#             n = n.next
+#
+#
+# @dataclass
+# class File(Chunk):
+#     id: int = -1
+#
+#     def __repr__(self):
+#         return f"({self.pos}, {self.id}, {self.size})"
+#
+#
+# @dataclass
+# class Empty(Chunk):
+#     def __repr__(self):
+#         return f"({self.pos}, _, {self.size})"
+#
+#
+# def print_map(chunks):
+#     for chunk in chunks:
+#         if isinstance(chunk, File):
+#             print(f"{chunk.id}" * chunk.size, end="")
+#         elif isinstance(chunk, Empty):
+#             print("." * chunk.size, end="")
+#     print()
+#
+#
+# disk_map = [int(x) for x in open("day9.txt").read().strip()]
+# files, empties = disk_map[::2], disk_map[1::2]
+# files = [(i, size) for i, size in enumerate(files)]
+# chunks = last_chunk = File(id=files[0][0], size=files[0][1], pos=0)
+# for empty_size, (file_id, file_size) in zip(empties, files[1:]):
+#     last_chunk = last_chunk.insert_after(Empty(size=empty_size))
+#     last_chunk = last_chunk.insert_after(File(id=file_id, size=file_size))
+#
+# files_by_size = defaultdict(list)
+# for chunk in iter(chunks):
+#     if isinstance(chunk, File):
+#         files_by_size[chunk.size].insert(0, chunk)
+#
+# # print_map(chunks)
+# # chunks.print_chain()
+# # print(files_by_size)
+#
+# empty = chunks
+# to_place_next = last_chunk
+# while to_place_next:
+#     # Grab the last file.
+#     done = False
+#     while not isinstance(to_place_next, File):
+#         if to_place_next is None:
+#             done = True
+#             break
+#         to_place_next = to_place_next.prev
+#     if done:
+#         break
+#
+#     file, to_place_next = to_place_next, to_place_next.prev
+#     print(file)
+#
+#     # Place the file in the next empty chunk.
+#     found = False
+#     empty = chunks
+#     while not found:
+#         if isinstance(empty, Empty) and empty.size >= file.size:
+#             found = True
+#             break
+#         else:
+#             empty = empty.next
+#             if empty is None or empty.pos >= file.pos:
+#                 break
+#     if not found:
+#         # print("No place found. Moving on to", to_place_next)
+#         # to_place_next = to_place_next.prev
+#         continue
+#
+#     # chunks.print_chain()
+#     # print("Placing", file, "in", empty)
+#
+#     if file.size == empty.size:
+#         # Perfect fit. Discard the Empty.
+#         empty.prev.insert_after(file.detach())
+#         empty.remove()
+#         empty = file.next
+#     elif file.size < empty.size:
+#         # Shrink available space in the Empty.
+#         empty.prev.insert_after(file.detach())
+#         empty.size -= file.size
+#     elif file.size > empty.size:
+#         # Break up the file. Discard the Empty.
+#         to_place_next = file.prev.insert_after(
+#             File(id=file.id, size=file.size - empty.size)
+#         )
+#         file.size = empty.size
+#         empty.prev.insert_after(file.detach())
+#         empty.remove()
+#         empty = file.next
+#     # print_map(chunks)
+#     for c in iter(chunks):
+#         if c.next:
+#             assert c.next.prev == c
+#         if c.prev:
+#             assert c.prev.next == c
+#
+# # chunks.print_chain()
+# # print_map(chunks)
+#
+# checksum = 0
+# offset = 0
+# for chunk in iter(chunks):
+#     if not isinstance(chunk, File):
+#         offset += chunk.size
+#         continue
+#     checksum += chunk.id * (sum(range(chunk.size)) + chunk.size * offset)
+#     offset += chunk.size
+# print(checksum)
+
 
 ##
-import numpy as np
-from dataclasses import dataclass
-from collections import defaultdict
-from typing import Optional
+grid = dict()
+starting_points = set()
+with open("day10.txt") as f:
+    for y, line in enumerate(f):
+        for x, elevation in enumerate(line.strip()):
+            elevation = int(elevation)
+            if elevation == 9:
+                grid[(y, x)] = [elevation, set([(y, x)]), 1]
+            else:
+                grid[(y, x)] = [elevation, set(), 0]
+            if elevation == 0:
+                starting_points.add((y, x))
+height = y + 1
+width = len(line.strip())
 
 
-@dataclass
-class Chunk:
-    size: int
-    pos: int
-    prev: Optional["Empty"]
-    next: Optional["Empty"]
-
-    def insert_after(self, chunk):
-        chunk.next = self.next
-        chunk.prev = self
-        chunk.pos = self.pos + 1
-        if self.next:
-            self.next.prev = chunk
-            self.next.pos = chunk.pos + 1
-        self.next = chunk
-
-    def detach(self):
-        if self.prev:
-            self.prev.next = self.next
-        if self.next:
-            self.next.prev = self.prev
-        self.prev = None
-        self.next = None
-        self.pos = -1
-
-    def print_chain(self):
-        n = self
-        while n is not None:
-            print(f"{n} ", end="")
-            n = n.next
-        print()
-
-    def __iter__(self):
-        n = self
-        while n:
-            yield n
-            n = n.next
+# def print_elevation_map():
+#     for y in range(height):
+#         for x in range(width):
+#             print(grid[(y, x)][0], end="")
+#         print()
+#     print()
+#
+#
+# def print_reachable_map():
+#     for y in range(height):
+#         for x in range(width):
+#             print(f"{len(grid[(y, x)][1]):02d} ", end="")
+#         print()
+#     print()
+#
+#
+# def print_rating_map():
+#     for y in range(height):
+#         for x in range(width):
+#             print(f"{grid[(y, x)][2]:02d} ", end="")
+#         print()
+#     print()
+#
+#
+def neighbours(y, x):
+    if y > 0:
+        yield (y - 1, x)
+    if x < width - 1:
+        yield (y, x + 1)
+    if y < height - 1:
+        yield (y + 1, x)
+    if x > 0:
+        yield (y, x - 1)
 
 
-@dataclass
-class File(Chunk):
-    id: int
+#
+#
+# print_elevation_map()
+# print_reachable_map()
+# print_rating_map()
 
-    def __repr__(self):
-        return f"({self.pos}, {self.id}, {self.size})"
+for _ in range(9):
+    for y in range(height):
+        for x in range(width):
+            elevation, reachable, rating = grid[(y, x)]
+            if elevation == 9:
+                continue
+            rating = 0
+            for neighbour in neighbours(y, x):
+                elevation2, reachable2, rating2 = grid[neighbour]
+                if elevation2 - elevation == 1:
+                    reachable.update(reachable2)
+                    rating += rating2
+            grid[(y, x)][2] = rating
 
+# print_reachable_map()
+# print_rating_map()
 
-@dataclass
-class Empty(Chunk):
-    def __repr__(self):
-        return f"({self.pos}, _, {self.size})"
-
-
-disk_map = np.fromregex("day9_test.txt", r"(\d)", dtype=[("num", "int")])["num"].tolist()
-files, empties = disk_map[::2], disk_map[1::2]
-files = [(i, size) for i, size in enumerate(files)]
-chunks = File(id=files[0][0], size=files[0][1], pos=0, prev=None, next=None)
-last_chunk = chunks
-for empty_size, (file_id, file_size) in zip(empties, files[1:]):
-    if empty_size > 0:
-        e = Empty(size=empty_size, pos=-1, prev=None, next=None)
-        last_chunk.insert_after(e)
-        last_chunk = e
-    c = File(id=file_id, size=file_size, pos=-1, prev=None, next=None)
-    last_chunk.insert_after(c)
-    last_chunk = c
-
-files_by_size = defaultdict(list)
-for chunk in iter(chunks):
-    if isinstance(chunk, File):
-        files_by_size[chunk.size].insert(0, chunk)
-
-chunks.print_chain()
-# print(files_by_size)
-for chunk in chunks:
-    assert chunk.pos > -1
-
-done = False
-empty = chunks
-last_file = last_chunk
-while True:
-    # Find the next empty chunk.
-    while not isinstance(empty, Empty):
-        empty = empty.next
-        if empty is None:
-            print("No more empties")
-            done = True
-            break
-        assert empty.pos > -1
-    if done:
-        break
-
-    # Grab the last file
-    while not isinstance(last_file, File):
-        if last_file.prev is None:
-            print("No more last files")
-            done = True
-            break
-        last_file = last_file.prev
-        if last_file.next == empty:
-            print(">", empty, last_file)
-            empty.detach()
-            done = True
-            break
-        if last_file.size > empty.size:
-            fast_file = last_file.prev
-        last_file.next.detach()
-        assert last_file.pos > -1
-    if done:
-        break
-
-    # Grab the next file that will fit in the empty space
-
-
-    file, last_file = last_file, last_file.prev
-    assert file.pos > -1
-    assert last_file.pos > -1
-
-    chunks.print_chain()
-    print(empty, file)
-
-    file.detach()
-    if file.size == empty.size:
-        # Perfect fit. Discard the Empty.
-        empty.prev.insert_after(file)
-        empty.detach()
-        empty = file.next
-    elif file.size < empty.size:
-        # Shrink available space in the Empty.
-        empty.prev.insert_after(file)
-        empty.size -= file.size
-    elif file.size > empty.size:
-        # Break up the file
-        last_file.insert_after(
-            File(id=file.id, size=file.size - empty.size, pos=-1, prev=None, next=None)
-        )
-        last_file = last_file.next
-        file.size = empty.size
-        empty.prev.insert_after(file)
-        empty.detach()
-        empty = file.next
-
-chunks.print_chain()
-
-checksum = 0
-offset = 0
-for chunk in iter(chunks):
-    assert isinstance(chunk, File)
-    checksum += chunk.id * (sum(range(chunk.size)) + chunk.size * offset)
-    offset += chunk.size
-print(checksum)
+print("Day 10, part 1:", sum(len(grid[p][1]) for p in starting_points))
+print("Day 10, part 2:", sum(grid[p][2] for p in starting_points))
