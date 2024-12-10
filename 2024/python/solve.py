@@ -308,41 +308,191 @@ print("Day 8, part 1:", len(antinodes))
 ##
 import numpy as np
 
-disk_map = np.fromregex("day9_test.txt", r"(\d)", dtype=[("num", "int")])[
-    "num"
-].tolist()
-print(disk_map)
+disk_map = np.fromregex("day9.txt", r"(\d)", dtype=[("num", "int")])["num"].tolist()
+chunks, empty = disk_map[::2], disk_map[1::2]
+chunks = [(i, size) for i, size in enumerate(chunks)]
 
-files, empty = disk_map[::2], disk_map[1::2]
-files = [(i, size) for i, size in enumerate(files)]
-print(files)
-print(empty)
-
-print()
 insert_point = 1
-space = empty.pop(0)
-to_place_id, to_place_size = files.pop(-1)
-while insert_point < len(files):
+space_available = empty.pop(0)
+to_place_id, to_place_size = chunks.pop(-1)
+while insert_point < len(chunks):
     # print(files)
     # print(insert_point)
-    to_take = min(space, to_place_size)
-    files.insert(insert_point, (to_place_id, to_take))
+    space_to_take = min(space_available, to_place_size)
+    chunks.insert(insert_point, (to_place_id, space_to_take))
     if to_place_size > 0:
         insert_point += 1
-    to_place_size -= to_take
+    to_place_size -= space_to_take
     if to_place_size == 0:
-        to_place_id, to_place_size = files.pop(-1)
-    space -= to_take
-    if space == 0:
-        space = empty.pop(0)
+        to_place_id, to_place_size = chunks.pop(-1)
+    space_available -= space_to_take
+    if space_available == 0:
+        space_available = empty.pop(0)
         insert_point += 1
-files.append((to_place_id, to_place_size))
+chunks.append((to_place_id, to_place_size))
 
-offsets = [0] + np.cumsum([file[1] for file in files[:-1]]).tolist()
-print(files)
-print(offsets)
+offsets = [0] + np.cumsum([chunk_size for _, chunk_size in chunks[:-1]]).tolist()
 
 checksum = 0
-for (file_id, file_size), offset in zip(files, offsets):
-    checksum += file_id * (sum(range(file_size)) + file_size * offset)
+for (chunk_id, chunk_size), offset in zip(chunks, offsets):
+    checksum += chunk_id * (sum(range(chunk_size)) + chunk_size * offset)
+print(checksum)
+
+##
+import numpy as np
+from dataclasses import dataclass
+from collections import defaultdict
+from typing import Optional
+
+
+@dataclass
+class Chunk:
+    size: int
+    pos: int
+    prev: Optional["Empty"]
+    next: Optional["Empty"]
+
+    def insert_after(self, chunk):
+        chunk.next = self.next
+        chunk.prev = self
+        chunk.pos = self.pos + 1
+        if self.next:
+            self.next.prev = chunk
+            self.next.pos = chunk.pos + 1
+        self.next = chunk
+
+    def detach(self):
+        if self.prev:
+            self.prev.next = self.next
+        if self.next:
+            self.next.prev = self.prev
+        self.prev = None
+        self.next = None
+        self.pos = -1
+
+    def print_chain(self):
+        n = self
+        while n is not None:
+            print(f"{n} ", end="")
+            n = n.next
+        print()
+
+    def __iter__(self):
+        n = self
+        while n:
+            yield n
+            n = n.next
+
+
+@dataclass
+class File(Chunk):
+    id: int
+
+    def __repr__(self):
+        return f"({self.pos}, {self.id}, {self.size})"
+
+
+@dataclass
+class Empty(Chunk):
+    def __repr__(self):
+        return f"({self.pos}, _, {self.size})"
+
+
+disk_map = np.fromregex("day9_test.txt", r"(\d)", dtype=[("num", "int")])["num"].tolist()
+files, empties = disk_map[::2], disk_map[1::2]
+files = [(i, size) for i, size in enumerate(files)]
+chunks = File(id=files[0][0], size=files[0][1], pos=0, prev=None, next=None)
+last_chunk = chunks
+for empty_size, (file_id, file_size) in zip(empties, files[1:]):
+    if empty_size > 0:
+        e = Empty(size=empty_size, pos=-1, prev=None, next=None)
+        last_chunk.insert_after(e)
+        last_chunk = e
+    c = File(id=file_id, size=file_size, pos=-1, prev=None, next=None)
+    last_chunk.insert_after(c)
+    last_chunk = c
+
+files_by_size = defaultdict(list)
+for chunk in iter(chunks):
+    if isinstance(chunk, File):
+        files_by_size[chunk.size].insert(0, chunk)
+
+chunks.print_chain()
+# print(files_by_size)
+for chunk in chunks:
+    assert chunk.pos > -1
+
+done = False
+empty = chunks
+last_file = last_chunk
+while True:
+    # Find the next empty chunk.
+    while not isinstance(empty, Empty):
+        empty = empty.next
+        if empty is None:
+            print("No more empties")
+            done = True
+            break
+        assert empty.pos > -1
+    if done:
+        break
+
+    # Grab the last file
+    while not isinstance(last_file, File):
+        if last_file.prev is None:
+            print("No more last files")
+            done = True
+            break
+        last_file = last_file.prev
+        if last_file.next == empty:
+            print(">", empty, last_file)
+            empty.detach()
+            done = True
+            break
+        if last_file.size > empty.size:
+            fast_file = last_file.prev
+        last_file.next.detach()
+        assert last_file.pos > -1
+    if done:
+        break
+
+    # Grab the next file that will fit in the empty space
+
+
+    file, last_file = last_file, last_file.prev
+    assert file.pos > -1
+    assert last_file.pos > -1
+
+    chunks.print_chain()
+    print(empty, file)
+
+    file.detach()
+    if file.size == empty.size:
+        # Perfect fit. Discard the Empty.
+        empty.prev.insert_after(file)
+        empty.detach()
+        empty = file.next
+    elif file.size < empty.size:
+        # Shrink available space in the Empty.
+        empty.prev.insert_after(file)
+        empty.size -= file.size
+    elif file.size > empty.size:
+        # Break up the file
+        last_file.insert_after(
+            File(id=file.id, size=file.size - empty.size, pos=-1, prev=None, next=None)
+        )
+        last_file = last_file.next
+        file.size = empty.size
+        empty.prev.insert_after(file)
+        empty.detach()
+        empty = file.next
+
+chunks.print_chain()
+
+checksum = 0
+offset = 0
+for chunk in iter(chunks):
+    assert isinstance(chunk, File)
+    checksum += chunk.id * (sum(range(chunk.size)) + chunk.size * offset)
+    offset += chunk.size
 print(checksum)
