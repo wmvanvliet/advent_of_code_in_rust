@@ -1,4 +1,4 @@
-Register A: 52
+Register A: 64196994
 Register B: 0
 Register C: 0
 

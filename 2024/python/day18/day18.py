@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from queue import PriorityQueue
-from tqdm import tqdm
 
 to_fall = list()
 with open("day18.txt") as f:
@@ -52,12 +51,12 @@ def solve(corrupted, plot=False):
         plot_map(corrupted, visited)
     return steps, iterations
 
-print("Day 18, part 1:", solve(set(to_fall[:1024])))
+print("part 1:", solve(set(to_fall[:1024]))[0])
 
 for i in range(len(to_fall), 0, -1):
     steps, iterations = solve(set(to_fall[:i]))
     if steps != -1:
         break
-print("Day 18, part 2:", to_fall[i][1], to_fall[i][0])
+print("part 2:", f"{to_fall[i][1]},{to_fall[i][0]}")
 
-solve(to_fall[:i], plot=True)
+# solve(to_fall[:i], plot=True)

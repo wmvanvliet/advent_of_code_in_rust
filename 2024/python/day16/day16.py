@@ -53,7 +53,7 @@ while position != end_position:
     #    break
     step += 1
 
-print("Day 16, part 1:", cost)
+print("part 1:", cost)
 end_direction = direction
 
 route = dict()
@@ -87,4 +87,4 @@ g[end_position] = 1
 trace(route, end_position, end_direction, g)
 
 #plt.imshow(g)
-print("Day 16, part 2:", g[g > 0].size)
+print("part 2:", g[g > 0].size)

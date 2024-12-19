@@ -48,7 +48,7 @@ while 0 <= instr < len(program) - 1:
         raise ValueError(f"Unknown opcode: {opcode} ({operand})")
     instr += 2
 
-print("Day 17, part 1:", ",".join([str(o) for o in output]))
+print("part 1:", ",".join([str(o) for o in output]))
 
 
 def solve(program, part2):
@@ -72,4 +72,4 @@ def solve(program, part2):
     return -1
 
 
-print("Day 17, part 2:", solve(program, 0))
+print("part 2:", solve(program, 0))
