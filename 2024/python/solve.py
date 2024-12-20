@@ -781,10 +781,37 @@ for area in areas:
     n_edges = count_edges(area)
     part1 += circumference * len(area)
     part2 += n_edges * len(area)
-    print(garden[next(iter(area))], len(area), circumference, n_edges)
+    # print(garden[next(iter(area))], len(area), circumference, n_edges)
 
 print("Day 12, part 1:", part1)
 print("Day 12, part 1:", part2)
+
+##
+import re
+import numpy as np
+
+part1 = 0
+part2 = 0
+with open("day13.txt") as f:
+    try:
+        while True:
+            x, y = re.match(r"Button A: X([\+-]\d+), Y([\+-]\d+)", next(f)).groups()
+            A = (int(x), int(y))
+            x, y = re.match(r"Button B: X([\+-]\d+), Y([\+-]\d+)", next(f)).groups()
+            B = (int(x), int(y))
+            x, y = re.match(r"Prize: X=(\d+), Y=(\d+)", next(f)).groups()
+            prize = (int(x), int(y))
+            next(f)
+            n_a, n_b = np.linalg.solve(np.vstack((A, B)).T, np.array(prize))
+            if np.allclose(n_a - round(n_a), 0) and np.allclose(n_b - round(n_b), 0):
+                part1 += int(round(n_a) * 3 + round(n_b))
+            n_a, n_b = np.linalg.solve(np.vstack((A, B)).T, np.array(prize) + 1_000_0000_000_000)
+            if np.allclose(n_a - round(n_a), 0, atol=1e-3) and np.allclose(n_b - round(n_b), 0, atol=1e-3):
+                part2 += int(round(n_a) * 3 + round(n_b))
+    except StopIteration:
+        pass
+print("Day 13, part 1:", part1)
+print("Day 13, part 2:", part2)
 
 ##
 import numpy as np
@@ -824,42 +851,18 @@ print("Day 14, part 1:", part1)
 # Horizontal
 # 145
 # 248
-fig = plt.figure()
-for i in range(99, 10000):
-    print("step", i)
-    if (i + 2) % width == 0 or (i - 42) % height == 0:
-        pos2 = pos + i * vel
-        pos2[:, 0] = pos2[:, 0] % width
-        pos2[:, 1] = pos2[:, 1] % height
-        grid = np.zeros((height, width), dtype="int")
-        for x, y in pos2:
-            grid[y, x] += 1
-        plt.clf()
-        plt.imshow(grid)
-        plt.draw()
-        plt.waitforbuttonpress()
+# fig = plt.figure()
+# for i in range(99, 10000):
+#     print("step", i)
+#     if (i + 2) % width == 0 or (i - 42) % height == 0:
+#         pos2 = pos + i * vel
+#         pos2[:, 0] = pos2[:, 0] % width
+#         pos2[:, 1] = pos2[:, 1] % height
+#         grid = np.zeros((height, width), dtype="int")
+#         for x, y in pos2:
+#             grid[y, x] += 1
+#         plt.clf()
+#         plt.imshow(grid)
+#         plt.draw()
+#         plt.waitforbuttonpress()
 
-##
-import re
-import numpy as np
-
-part1 = 0
-with open("day13.txt") as f:
-    try:
-        while True:
-            x, y = re.match(r"Button A: X([\+-]\d+), Y([\+-]\d+)", next(f)).groups()
-            A = (int(x), int(y))
-            x, y = re.match(r"Button B: X([\+-]\d+), Y([\+-]\d+)", next(f)).groups()
-            B = (int(x), int(y))
-            x, y = re.match(r"Prize: X=(\d+), Y=(\d+)", next(f)).groups()
-            prize = (int(x) + 10000000000000, int(y) + 10000000000000)
-            next(f)
-            n_a, n_b = np.linalg.solve(np.vstack((A, B)).T, np.array(prize))
-            if abs(n_a - round(n_a)) < 1e-1 and abs(n_b - round(n_b)) < 1e-1:
-                print(n_a, n_b, int(round(n_a * 3 + n_b)))
-                part1 += int(round(n_a * 3 + n_b))
-            else:
-                print(n_a, n_b, "no solution")
-    except StopIteration:
-        pass
-print("Day 13, part 1:", part1)
