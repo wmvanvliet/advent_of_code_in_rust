@@ -1,40 +1,36 @@
-from scipy.spatial import KDTree
-from tqdm import tqdm
-grid = dict()
+from functools import cache
+
 with open("day19.txt") as f:
-    for y, line in enumerate(f):
-        for x, c in enumerate(line.strip()):
-            if c == "S":
-                start_pos = y, x
-                c = "."
-            elif c == "E":
-                end_pos = y, x
-                c = "."
-            grid[(y, x)] = c
+    available_towels = next(f).strip().split(", ")
+    next(f)
+    designs = f.read().strip().split("\n")
 
-track = dict()
-to_visit = [(start_pos, 0)]
-pos = None
-while pos != end_pos and len(to_visit) > 0:
-    pos, dist = to_visit.pop(0)
-    track[pos] = dist
-    y, x = pos
-    for n in [(y - 1, x), (y, x + 1), (y + 1, x), (y, x - 1)]:
-        if grid.get(n, "#") == "." and n not in track:
-            to_visit.append((n, dist + 1))
 
-def count_shortcuts(max_length, min_time_saved):
-    shortcuts = list()
-    for pos, dist in tqdm(track.items()):
-        y, x = pos
-        for ty, tx in track.keys():
-            td = abs(ty - y) + abs(tx - x)
-            if td <= max_length:
-                saved = track[(ty, tx)] - dist - td
-                if saved >= min_time_saved:
-                    shortcuts.append(saved)
-                    #print(saved, len(shortcuts), flush=True)
-    return len(shortcuts)
+@cache
+def count_possibilities(design):
+    """Count the number of ways to make the design out of the available towels.
 
-print("\npart 1:", count_shortcuts(max_length=2, min_time_saved=100))
-print("\npart 2:", count_shortcuts(max_length=20, min_time_saved=100))
+    Parameters
+    ----------
+    design : str
+        The design to create.
+
+    Returns
+    -------
+    n_possibilities : int
+        The number of ways to make the design out of the available towels.
+    """
+    # When designing a recursive function, always do the end conditions first.
+    if len(design) == 0:
+        return 1
+
+    # Try all possible towels to see if they would be a good beginning for the design.
+    return sum(
+        count_possibilities(design.removeprefix(towel))
+        for towel in available_towels
+        if design.startswith(towel)
+    )
+
+
+print("part 1:", sum(min(count_possibilities(design), 1) for design in designs))
+print("part 2:", sum(count_possibilities(design) for design in designs))
