@@ -16,8 +16,7 @@ for patches, n in [label(grid == x) for x in np.unique(grid)]:
         x = abs_sum(convolve2d(patch, [[-1, 1], [1, -1]]))
         part1 += area * (h + v)
         part2 += area * x
-    # print(label, area, h + v, x, area * (h + v), area * x)
 
-print("part1:", part1)
-print("part2:", part2)
+print("part 1:", part1)
+print("part 2:", part2)
 
