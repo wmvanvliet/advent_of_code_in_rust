@@ -1,5 +1,3 @@
-from tqdm import tqdm
-
 grid = dict()
 with open("day20.txt") as f:
     for y, line in enumerate(f):
@@ -26,7 +24,7 @@ while pos != end_pos and len(to_visit) > 0:
 
 def count_shortcuts(max_length, min_time_saved):
     shortcuts = list()
-    for pos, dist in tqdm(track.items()):
+    for pos, dist in track.items():
         y, x = pos
         for ty, tx in track.keys():
             td = abs(ty - y) + abs(tx - x)

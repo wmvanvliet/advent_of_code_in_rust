@@ -20,4 +20,4 @@ for file in files:
     except CalledProcessError:
         part1 = "error"
         part2 = "error"
-    print(f"day {day:02d}    part1: {part1.strip():<25} part2: {part2.strip():<25} time: {end_time - start_time:.4f}s")
+    print(f"day {day:02d}    part1: {part1.strip():<20} part2: {part2.strip():<40} time: {end_time - start_time:.4f}s")
