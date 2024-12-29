@@ -22,17 +22,23 @@ while pos != end_pos and len(to_visit) > 0:
             to_visit.append((n, dist + 1))
 
 
+def searchlight(y, x, radius):
+    for dy in range(-radius, radius + 1):
+        for dx in range(-(radius - abs(dy)), radius - abs(dy) + 1):
+            pos = y + dy, x + dx
+            if pos in track:
+                yield pos, abs(dx) + abs(dy)
+
+
 def count_shortcuts(max_length, min_time_saved):
     shortcuts = list()
     for pos, dist in track.items():
         y, x = pos
-        for ty, tx in track.keys():
-            td = abs(ty - y) + abs(tx - x)
-            if td <= max_length:
-                saved = track[(ty, tx)] - dist - td
-                if saved >= min_time_saved:
-                    shortcuts.append(saved)
-                    # print(saved, len(shortcuts), flush=True)
+        for (ty, tx), td in searchlight(y, x, max_length):
+            saved = track[(ty, tx)] - dist - td
+            if saved >= min_time_saved:
+                shortcuts.append(saved)
+                # print(saved, len(shortcuts), flush=True)
     return len(shortcuts)
 
 
