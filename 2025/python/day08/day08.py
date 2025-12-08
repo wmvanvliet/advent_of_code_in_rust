@@ -1,36 +1,53 @@
-from math import sqrt
-from collections import defaultdict
+from itertools import combinations
 
-junctions = list()
+# Read in the coordinates of all junction boxes.
+coords = list()
 with open("input.txt") as f:
     for line in f:
         x, y, z = line.strip().split(",")
-        junctions.append((int(x), int(y), int(z)))
-print(len(junctions))
+        coords.append((int(x), int(y), int(z)))
 
-distances = list()
-for i, j1 in enumerate(junctions):
-    for j, j2 in enumerate(junctions[i + 1:], i + 1):
-        distances.append((i, j, sqrt((j1[0] - j2[0]) ** 2 + (j1[1] - j2[1]) ** 2 + (j1[2] - j2[2]) ** 2)))
 
-connections = defaultdict(set)
-for i, j, _ in sorted(distances, key=lambda x: x[2])[:1000]:
-    connections[i].add(j)
-    connections[j].add(i)
+def straight_line_dist(points):
+    """Compute squared straight line distance between two points."""
+    p1, p2 = points
+    return sum((j1 - j2) ** 2 for j1, j2 in zip(coords[p1], coords[p2]))
 
-graphs = list()
-to_visit = set(range(len(junctions)))
-while len(to_visit) > 0:
-    junction = to_visit.pop()
-    graph = {junction}
-    edges = connections[junction]
-    while len(edges) > 0:
-        neighbour = edges.pop()
-        if neighbour in to_visit:
-            to_visit.remove(neighbour)
-            graph.add(neighbour)
-            edges |= connections[neighbour]
-    graphs.append(graph)
 
-graphs = sorted(graphs, key=len)[::-1]
-print("part 1:", len(graphs[0]) * len(graphs[1]) * len(graphs[2]))
+# Compute the order in which we are going to connect junction boxes.
+connections = sorted(combinations(range(len(coords)), 2), key=straight_line_dist)
+
+# At first, each junction box is its own network.
+networks = [{i} for i in range(len(coords))]
+
+# Start connecting boxes together, meging networks.
+for step, (j1, j2) in enumerate(connections):
+    if step == 1000:
+        # We have connected 1000 junction boxes. Time to compute part 1.
+        networks = sorted(networks, key=len)[::-1]
+        print("part 1:", len(networks[0]) * len(networks[1]) * len(networks[2]))
+
+    # For each of the two junction boxes that we are going to connect, find the index of
+    # the networks they belong to.
+    for i, g in enumerate(networks):
+        if j1 in g:
+            j1_net = i
+            break
+    for i, g in enumerate(networks):
+        if j2 in g:
+            j2_net = i
+            break
+
+    # If the two junction boxes already belong to the same network, nothing happens.
+    if j1_net == j2_net:
+        continue
+
+    # Merge the networks.
+    networks[j1_net] |= networks[j2_net]
+    del networks[j2_net]
+
+    # If there's only one network left, it means all the junction boxes are now
+    # connected. Time to compute part 2.
+    if len(networks) == 1:
+        print("part 2:", coords[j1][0] * coords[j2][0])
+        break  # no point in continuing to connect boxes.
